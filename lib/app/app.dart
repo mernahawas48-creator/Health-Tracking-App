@@ -10,7 +10,7 @@ class HealthApp extends StatelessWidget{
       debugShowCheckedModeBanner: false,
       title: 'Health Tracker',
 
-      initialRoute: '/login',
+      initialRoute: '/signup',
       routes: appRoutes,
     );
   } 
