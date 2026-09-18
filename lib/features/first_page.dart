@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/themes/appcolors.dart';
-import 'package:meditrack/features/login.dart';
-import 'package:meditrack/features/onboarding.dart';
 
 class FirstPage extends StatelessWidget {
   const FirstPage({super.key});
