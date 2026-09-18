@@ -9,8 +9,7 @@ class HealthApp extends StatelessWidget{
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Health Tracker',
-
-      initialRoute: '/signup',
+      initialRoute: '/',
       routes: appRoutes,
     );
   } 

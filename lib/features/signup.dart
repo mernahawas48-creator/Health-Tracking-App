@@ -4,6 +4,8 @@ import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/features/custom_text_form_field.dart';
 
 class SignupPage extends StatefulWidget {
+  
+
   const SignupPage({super.key});
 
   @override
@@ -11,6 +13,8 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPage extends State<SignupPage> {
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return AuthLayout(
@@ -44,24 +48,7 @@ class _SignupPage extends State<SignupPage> {
               ])
             ),
             ),
-            SizedBox(
-              width: MediaQuery.sizeOf(context).width *0.9,
-              child: CustomTextFormField(
-                LabelText: 'First Name', 
-                hintText: 'Enter your first name', 
-                prefixIcon: Icons.person
-                ),
-            ),
-            SizedBox(height: MediaQuery.sizeOf(context).height * 0.03,),
-            SizedBox(
-              width: MediaQuery.sizeOf(context).width *0.9,
-              child: CustomTextFormField(
-                LabelText: 'Last Name', 
-                hintText: 'Enter your last name', 
-                prefixIcon: Icons.person
-                ),
-            ),
-            SizedBox(height: MediaQuery.sizeOf(context).height * 0.03,),
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.01,),
             SizedBox(
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
@@ -85,6 +72,7 @@ class _SignupPage extends State<SignupPage> {
             SizedBox(
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
+                controller: passwordController,
                 LabelText: 'Password', 
                 hintText: '.... .... ....', 
                 prefixIcon: Icons.lock_outline,
@@ -111,10 +99,115 @@ class _SignupPage extends State<SignupPage> {
                   } ,
 
                 ),
-            )
-          
-        ],
+            ),
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.03,),
 
+            SizedBox(
+              width: MediaQuery.sizeOf(context).width *0.9,
+              child: CustomTextFormField(
+                controller: confirmPasswordController,
+                LabelText: 'Confirm Password', 
+                hintText: '.... .... ....', 
+                prefixIcon: Icons.lock_outline,
+                validator: (value) {
+                    if(value==null || value.isEmpty){
+                      return 'Please enter your password';
+                    }
+                    if(value != passwordController.text){
+                      return 'Password do not match';
+                    }
+                    return null;
+                  } ,
+
+                ),
+            ),
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.03,),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Appcolors.Primary,
+                elevation: 5,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 90,
+                  vertical: 10
+                ),
+               shape:  RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15)
+               )
+              ),
+              onPressed: (){
+
+              }, 
+              child: Text(
+                'Sign up',
+                style: TextStyle(
+                  color: Appcolors.White,
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold
+                ),
+              )
+              ),
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.05,),
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: Appcolors.Grey1,
+                      thickness: 1.5,
+                      indent: 20,
+                    ) ,),
+                  Padding(padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.sizeOf(context).width*0.05,
+                  ),
+                  child: Text(
+                    'or continue with',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Appcolors.Black2,
+                    ),
+                  ),),
+                  
+                  Expanded(
+                    child: Divider(
+                    color: Appcolors.Grey1,
+                    thickness: 1.5,
+                    endIndent: 20,
+                  ))
+                ],
+              ),
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.03,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  InkWell(
+                    onTap: (){
+
+                    },
+                    child: Image.asset(
+                    'assets/images/google-logo.png',
+                    width: 50,
+                    height: 50,
+                  ) ,
+                  )
+                  
+                ],
+              ),
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.01,),
+              TextButton(
+                onPressed: (){
+
+                },
+                child: Text(
+                  'Need Help?',
+                  style: TextStyle(
+                  color: Appcolors.Primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold
+                ),)
+                
+              )
+
+        ],
       ) 
       );
   }
