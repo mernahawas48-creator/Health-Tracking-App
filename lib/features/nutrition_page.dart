@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/features/food_search_page.dart';
+import 'package:meditrack/features/meal_ideas_page.dart';
 import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
@@ -20,6 +21,16 @@ class _NutritionPageState extends State<NutritionPage> {
     final log = await Navigator.push<FoodLog>(
       context,
       MaterialPageRoute(builder: (_) => const FoodSearchPage()),
+    );
+    if (log != null) setState(() => widget.foodLogs.add(log));
+  }
+
+  Future<void> _openMealIdeas() async {
+    final log = await Navigator.push<FoodLog>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MealIdeasPage(remainingCalories: _remaining),
+      ),
     );
     if (log != null) setState(() => widget.foodLogs.add(log));
   }
@@ -133,6 +144,12 @@ class _NutritionPageState extends State<NutritionPage> {
                 ),
                 const SizedBox(height: 10),
                 Text(_suggestion),
+                const SizedBox(height: 10),
+                TextButton.icon(
+                  onPressed: _openMealIdeas,
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                  label: const Text('Browse healthy meal ideas'),
+                ),
               ],
             ),
           ),

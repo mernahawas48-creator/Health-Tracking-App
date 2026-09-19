@@ -4,7 +4,12 @@ import 'package:meditrack/features/medications/medications_page.dart';
 import 'package:meditrack/features/medications/models/medication.dart';
 import 'package:meditrack/features/water_tracker_page.dart';
 import 'package:meditrack/features/sleep_tracker_page.dart';
+import 'package:meditrack/features/nutrition_page.dart';
+import 'package:meditrack/features/profile_page.dart';
+import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/services/habit_streak_service.dart';
+import 'package:meditrack/services/medication_adherence_service.dart';
+import 'package:meditrack/services/medication_repository.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,18 +21,36 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int selectedIndex = 0;
   final List<Medication> _medications = [];
+  final MedicationRepository _medicationRepository = MedicationRepository();
+  bool _isLoadingMedications = true;
+  final List<FoodLog> _foodLogs = [];
   static const int _waterGoalMl = 2000;
   int _waterMl = 0;
   int _waterStreak = 0;
   static const int _sleepGoalMinutes = 8 * 60;
   int _sleepMinutes = 0;
   int _sleepStreak = 0;
+  String _userName = 'User Name';
 
   @override
   void initState() {
     super.initState();
     _loadStreaks();
+    _loadMedications();
   }
+
+  Future<void> _loadMedications() async {
+    final medications = await _medicationRepository.load();
+    if (!mounted) return;
+    setState(() {
+      _medications
+        ..clear()
+        ..addAll(medications);
+      _isLoadingMedications = false;
+    });
+  }
+
+  Future<void> _saveMedications() => _medicationRepository.save(_medications);
 
   Future<void> _loadStreaks() async {
     final waterStreak = await HabitStreakService.currentStreak(HabitType.water);
@@ -66,16 +89,57 @@ class _HomePageState extends State<HomePage> {
     );
     if (medication == null || !mounted) return;
     setState(() => _medications.add(medication));
+    await _saveMedications();
+  }
+
+  Future<void> _addMedicationFromList(Medication medication) async {
+    setState(() => _medications.add(medication));
+    await _saveMedications();
+  }
+
+  Future<void> _updateMedication(Medication updatedMedication) async {
+    final index = _medications.indexWhere(
+      (item) => item.id == updatedMedication.id,
+    );
+    if (index < 0) return;
+    setState(() => _medications[index] = updatedMedication);
+    await _saveMedications();
   }
 
   Future<void> _openMedications() async {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
-        builder: (_) => MedicationsPage(medications: _medications),
+        builder: (_) => MedicationsPage(
+          medications: _medications,
+          onMedicationAdded: _addMedicationFromList,
+          onMedicationChanged: _updateMedication,
+        ),
       ),
     );
     if (mounted) setState(() {});
+  }
+
+  Future<void> _openNutrition() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => NutritionPage(foodLogs: _foodLogs)),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _openProfile() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfilePage(
+          initialName: _userName,
+          onNameChanged: (name) {
+            if (mounted) setState(() => _userName = name);
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _openWaterTracker() async {
@@ -123,29 +187,34 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Column(
-              children: [
-                _header(),
-                Transform.translate(
-                  offset: const Offset(0, -50),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        _upcomingCard(),
-                        const SizedBox(height: 20),
-                        _activityCard(),
-                        const SizedBox(height: 20),
-                        _waterSleep(),
-                        const SizedBox(height: 20),
-                        _todayCard(),
-                        const SizedBox(height: 100),
-                      ],
-                    ),
+            child: _isLoadingMedications
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 90),
+                    child: CircularProgressIndicator(color: Appcolors.Primary),
+                  )
+                : Column(
+                    children: [
+                      _header(),
+                      Transform.translate(
+                        offset: const Offset(0, -50),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _upcomingCard(),
+                              const SizedBox(height: 20),
+                              _activityCard(),
+                              const SizedBox(height: 20),
+                              _waterSleep(),
+                              const SizedBox(height: 20),
+                              _todayCard(),
+                              const SizedBox(height: 100),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
           Positioned(
             right: 20,
@@ -217,11 +286,11 @@ class _HomePageState extends State<HomePage> {
         children: [
           const CircleAvatar(radius: 30, child: Icon(Icons.person)),
           const SizedBox(width: 15),
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Welcome 👋',
                 style: TextStyle(
                   color: Appcolors.White,
@@ -229,10 +298,10 @@ class _HomePageState extends State<HomePage> {
                   fontSize: 17,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'User Name',
-                style: TextStyle(
+                _userName,
+                style: const TextStyle(
                   color: Appcolors.White,
                   fontFamily: 'Inter',
                   fontSize: 20,
@@ -514,17 +583,26 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
-                  Text(
-                    medication.formattedTime,
-                    style: const TextStyle(
-                      color: Appcolors.Primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Icon(
+                    medication.statusOn(DateTime.now()).icon,
+                    color:
+                        medication.statusOn(DateTime.now()) == DoseStatus.taken
+                        ? Appcolors.Primary
+                        : medication.statusOn(DateTime.now()) ==
+                              DoseStatus.skipped
+                        ? Appcolors.SecondaryOrange
+                        : Appcolors.Grey2,
                   ),
                 ],
               ),
             ),
           ),
+        if (_today.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _MedicationHomeStatus(
+            summary: MedicationAdherenceService.summaryForToday(_medications),
+          ),
+        ],
       ],
     ),
   );
@@ -534,6 +612,14 @@ class _HomePageState extends State<HomePage> {
     onPressed: () async {
       if (index == 1) {
         await _openMedications();
+        return;
+      }
+      if (index == 2) {
+        await _openNutrition();
+        return;
+      }
+      if (index == 3) {
+        await _openProfile();
         return;
       }
       setState(() => selectedIndex = index);
@@ -578,4 +664,43 @@ class _ActivityValue extends StatelessWidget {
       Text(label, style: const TextStyle(color: Appcolors.Grey2)),
     ],
   );
+}
+
+class _MedicationHomeStatus extends StatelessWidget {
+  const _MedicationHomeStatus({required this.summary});
+
+  final MedicationAdherenceSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = summary.isComplete;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (complete ? Appcolors.Primary : Appcolors.SecondaryOrange)
+            .withOpacity(.10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            complete
+                ? Icons.check_circle_outline_rounded
+                : Icons.local_fire_department_rounded,
+            color: complete ? Appcolors.Primary : Appcolors.SecondaryOrange,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              complete
+                  ? 'All doses completed • ${summary.streakDays} day streak'
+                  : '${summary.takenCount}/${summary.scheduledCount} doses taken • ${summary.streakDays} day streak',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

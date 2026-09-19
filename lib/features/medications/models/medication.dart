@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 enum MedicationFrequency { daily, everyOtherDay, weekly, asNeeded }
@@ -86,6 +88,32 @@ extension MealRelationLabel on MealRelation {
   }
 }
 
+enum DoseStatus { pending, taken, skipped }
+
+extension DoseStatusDetails on DoseStatus {
+  String get label {
+    switch (this) {
+      case DoseStatus.pending:
+        return 'Pending';
+      case DoseStatus.taken:
+        return 'Taken';
+      case DoseStatus.skipped:
+        return 'Skipped';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case DoseStatus.pending:
+        return Icons.schedule_rounded;
+      case DoseStatus.taken:
+        return Icons.check_circle_rounded;
+      case DoseStatus.skipped:
+        return Icons.remove_circle_outline_rounded;
+    }
+  }
+}
+
 class Medication {
   const Medication({
     required this.id,
@@ -97,6 +125,7 @@ class Medication {
     required this.time,
     required this.mealRelation,
     this.isActive = true,
+    this.doseStatuses = const {},
   });
 
   final String id;
@@ -109,6 +138,9 @@ class Medication {
   final MealRelation mealRelation;
   final bool isActive;
 
+  /// The key is `yyyy-MM-dd`; it keeps a local record for each scheduled dose.
+  final Map<String, DoseStatus> doseStatuses;
+
   bool get hasScheduledReminder {
     return isActive && frequency != MedicationFrequency.asNeeded;
   }
@@ -116,8 +148,8 @@ class Medication {
   bool isScheduledFor(DateTime date) {
     if (!hasScheduledReminder) return false;
 
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
-    final day = DateTime(date.year, date.month, date.day);
+    final start = _dateOnly(startDate);
+    final day = _dateOnly(date);
     if (day.isBefore(start)) return false;
 
     final daysSinceStart = day.difference(start).inDays;
@@ -133,6 +165,31 @@ class Medication {
     }
   }
 
+  DoseStatus statusOn(DateTime date) {
+    return doseStatuses[_dateKey(date)] ?? DoseStatus.pending;
+  }
+
+  Medication withStatus(DateTime date, DoseStatus status) {
+    final updatedStatuses = Map<String, DoseStatus>.from(doseStatuses)
+      ..[_dateKey(date)] = status;
+    return copyWith(doseStatuses: updatedStatuses);
+  }
+
+  Medication copyWith({bool? isActive, Map<String, DoseStatus>? doseStatuses}) {
+    return Medication(
+      id: id,
+      name: name,
+      type: type,
+      dosage: dosage,
+      frequency: frequency,
+      startDate: startDate,
+      time: time,
+      mealRelation: mealRelation,
+      isActive: isActive ?? this.isActive,
+      doseStatuses: doseStatuses ?? this.doseStatuses,
+    );
+  }
+
   DateTime nextDoseAfter(DateTime date) {
     var candidate = DateTime(
       date.year,
@@ -141,7 +198,6 @@ class Medication {
       time.hour,
       time.minute,
     );
-
     while (!candidate.isAfter(date) || !isScheduledFor(candidate)) {
       candidate = candidate.add(const Duration(days: 1));
     }
@@ -154,4 +210,55 @@ class Medication {
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'type': type.name,
+    'dosage': dosage,
+    'frequency': frequency.name,
+    'startDate': startDate.toIso8601String(),
+    'hour': time.hour,
+    'minute': time.minute,
+    'mealRelation': mealRelation.name,
+    'isActive': isActive,
+    'doseStatuses': doseStatuses.map((key, value) => MapEntry(key, value.name)),
+  };
+
+  String toStorageValue() => jsonEncode(toJson());
+
+  factory Medication.fromJson(Map<String, dynamic> json) {
+    final rawStatuses =
+        (json['doseStatuses'] as Map? ?? const <String, dynamic>{});
+    return Medication(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      type: MedicationType.values.byName(json['type'] as String),
+      dosage: json['dosage'] as String,
+      frequency: MedicationFrequency.values.byName(json['frequency'] as String),
+      startDate: DateTime.parse(json['startDate'] as String),
+      time: TimeOfDay(
+        hour: (json['hour'] as num).toInt(),
+        minute: (json['minute'] as num).toInt(),
+      ),
+      mealRelation: MealRelation.values.byName(json['mealRelation'] as String),
+      isActive: json['isActive'] as bool? ?? true,
+      doseStatuses: rawStatuses.map(
+        (key, value) => MapEntry(
+          key.toString(),
+          DoseStatus.values.byName(value.toString()),
+        ),
+      ),
+    );
+  }
+
+  static String _dateKey(DateTime date) {
+    final day = _dateOnly(date);
+    return '${day.year.toString().padLeft(4, '0')}-'
+        '${day.month.toString().padLeft(2, '0')}-'
+        '${day.day.toString().padLeft(2, '0')}';
+  }
+
+  static DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 }

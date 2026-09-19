@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/services/habit_streak_service.dart';
+import 'package:meditrack/themes/appcolors.dart';
 
 class WaterTrackerPage extends StatefulWidget {
   const WaterTrackerPage({
@@ -45,6 +45,11 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
     _syncStreak();
   }
 
+  void _reset() {
+    setState(() => _waterMl = 0);
+    _syncStreak();
+  }
+
   @override
   Widget build(BuildContext context) {
     final progress = (_waterMl / widget.goalMl).clamp(0.0, 1.0);
@@ -63,10 +68,7 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              setState(() => _waterMl = 0);
-              _syncStreak();
-            },
+            onPressed: _reset,
             child: const Text(
               'Reset',
               style: TextStyle(color: Appcolors.SecondaryOrange),
@@ -74,111 +76,306 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _WaterSummaryCard(
+                        waterMl: _waterMl,
+                        goalMl: widget.goalMl,
+                        streak: _streak,
+                        progress: progress,
+                        remaining: remaining,
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Add water',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          _WaterAmountButton(amount: 150, onTap: _addWater),
+                          const SizedBox(width: 10),
+                          _WaterAmountButton(amount: 250, onTap: _addWater),
+                          const SizedBox(width: 10),
+                          _WaterAmountButton(amount: 500, onTap: _addWater),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      _HydrationPaceCard(
+                        waterMl: _waterMl,
+                        goalMl: widget.goalMl,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await _syncStreak();
+                    if (context.mounted) Navigator.pop(context, _waterMl);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Appcolors.Primary,
+                    foregroundColor: Appcolors.White,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Save today\'s water',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WaterSummaryCard extends StatelessWidget {
+  const _WaterSummaryCard({
+    required this.waterMl,
+    required this.goalMl,
+    required this.streak,
+    required this.progress,
+    required this.remaining,
+  });
+
+  final int waterMl;
+  final int goalMl;
+  final int streak;
+  final double progress;
+  final int remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Appcolors.White,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Appcolors.Grey3),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.water_drop_rounded,
+            size: 62,
+            color: Appcolors.SecondaryBlue,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '$waterMl ml',
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Appcolors.Black,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '🔥 $streak day water streak',
+            style: const TextStyle(
+              color: Appcolors.SecondaryOrange,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            'of $goalMl ml daily goal',
+            style: const TextStyle(color: Appcolors.Grey2),
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 12,
+              color: Appcolors.SecondaryBlue,
+              backgroundColor: const Color(0xffDDEEFF),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            remaining == 0
+                ? 'Great! You reached today\'s water goal.'
+                : '$remaining ml remaining today',
+            style: const TextStyle(
+              color: Appcolors.Grey1,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HydrationPaceCard extends StatelessWidget {
+  const _HydrationPaceCard({required this.waterMl, required this.goalMl});
+
+  final int waterMl;
+  final int goalMl;
+
+  static const _dayStartHour = 8;
+  static const _dayEndHour = 22;
+
+  int _roundUpTo50(double value) => ((value / 50).ceil() * 50).toInt();
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+    const startMinutes = _dayStartHour * 60;
+    const endMinutes = _dayEndHour * 60;
+    final elapsed = (currentMinutes - startMinutes).clamp(
+      0,
+      endMinutes - startMinutes,
+    );
+    final dayLength = endMinutes - startMinutes;
+    final expectedByNow = ((elapsed / dayLength) * goalMl).round();
+    final difference = waterMl - expectedByNow;
+    final remaining = (goalMl - waterMl).clamp(0, goalMl);
+    final minutesLeft = (endMinutes - currentMinutes).clamp(0, dayLength);
+    final twoHourPortions = (minutesLeft / 120).ceil().clamp(1, 8);
+    final nextSipMl = remaining == 0
+        ? 0
+        : _roundUpTo50(remaining / twoHourPortions);
+
+    final isGoalDone = remaining == 0;
+    final isOnTrack = difference >= -150;
+    final Color accent = isGoalDone || isOnTrack
+        ? Appcolors.Primary
+        : Appcolors.SecondaryOrange;
+    final IconData icon = isGoalDone
+        ? Icons.celebration_rounded
+        : isOnTrack
+        ? Icons.schedule_rounded
+        : Icons.water_drop_outlined;
+    final String headline = isGoalDone
+        ? 'You are fully hydrated for today'
+        : isOnTrack
+        ? 'You are on a healthy pace'
+        : 'A small catch-up will help';
+    final String explanation = isGoalDone
+        ? 'Keep drinking when you feel thirsty, but there is no need to rush.'
+        : isOnTrack
+        ? 'Your intake is close to the pace needed to reach your goal by 10 PM.'
+        : 'You are ${difference.abs()} ml behind a steady pace. One planned drink is enough to get closer.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Appcolors.White,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withOpacity(.28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Your hydration pace',
+                      style: TextStyle(
+                        color: Appcolors.Grey1,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      headline,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            explanation,
+            style: const TextStyle(color: Appcolors.Black2, height: 1.35),
+          ),
+          if (!isGoalDone) ...[
+            const SizedBox(height: 16),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: Appcolors.White,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Appcolors.Grey3),
+                color: const Color(0xffF2FAFA),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
+              child: Row(
                 children: [
                   const Icon(
-                    Icons.water_drop_rounded,
-                    size: 62,
-                    color: Appcolors.SecondaryBlue,
+                    Icons.local_drink_outlined,
+                    color: Appcolors.Primary,
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    '$_waterMl ml',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Appcolors.Black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '🔥 $_streak day water streak',
-                    style: const TextStyle(
-                      color: Appcolors.SecondaryOrange,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    'of ${widget.goalMl} ml daily goal',
-                    style: const TextStyle(color: Appcolors.Grey2),
-                  ),
-                  const SizedBox(height: 20),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 12,
-                      color: Appcolors.SecondaryBlue,
-                      backgroundColor: const Color(0xffDDEEFF),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    remaining == 0
-                        ? 'Great! You reached today\'s water goal.'
-                        : '$remaining ml remaining today',
-                    style: const TextStyle(
-                      color: Appcolors.Grey1,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Next gentle target: drink $nextSipMl ml in the next 2 hours.',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Appcolors.Black2,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Add water',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _WaterAmountButton(amount: 150, onTap: _addWater),
-                const SizedBox(width: 10),
-                _WaterAmountButton(amount: 250, onTap: _addWater),
-                const SizedBox(width: 10),
-                _WaterAmountButton(amount: 500, onTap: _addWater),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await _syncStreak();
-                  if (context.mounted) Navigator.pop(context, _waterMl);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Appcolors.Primary,
-                  foregroundColor: Appcolors.White,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  'Save today\'s water',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
           ],
-        ),
+          const SizedBox(height: 12),
+          Text(
+            'Pace guide uses an 8 AM–10 PM day. It is a wellness guide, not medical advice.',
+            style: TextStyle(color: Appcolors.Grey2, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
