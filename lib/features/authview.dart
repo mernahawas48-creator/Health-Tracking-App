@@ -10,49 +10,50 @@ class AuthLayout extends StatelessWidget{
     final size = MediaQuery.sizeOf(context);
     return Scaffold(
       backgroundColor: Appcolors.Primary ,
-      body: Stack(
+      body: 
+      Column(
         children: [
-          Positioned(
-            top: size.height*0.12,
-            left: size.width*0.3,
-            child: Image.asset(
-              'assets/images/get_started1.png', 
-            )
+            // top: size.height*0.1,
+            // left: size.width*0.3,
+             Image.asset(
+              'assets/images/auth.png',
+              width: MediaQuery.sizeOf(context).width,
+              height: MediaQuery.sizeOf(context).height*0.3,
+              fit: BoxFit.contain,
             ),
-            Positioned(
-              top: size.height*0.17,
-              left: size.width*0.02,
-              child: Image.asset(
-                'assets/images/get_started2.png'
-              ) 
-              ),
-              Positioned(
-                top: size.height*0.1,
-                left: size.width*0.1,
-                child: Text(
-                  '“Right Dose \nAlways”',
-                  style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Appcolors.White
-                  ),
-              )
-              ),
+            
+            // Positioned(
+            //   top: size.height*0.17,
+            //   left: size.width*0.02,
+            //   child: Image.asset(
+            //     'assets/images/get_started2.png'
+            //   ) 
+            //   ),
+              // Positioned(
+              //   top: size.height*0.1,
+              //   left: size.width*0.1,
+              //   child: Text(
+              //     '“Right Dose \nAlways”',
+              //     style: TextStyle(
+              //       fontStyle: FontStyle.italic,
+              //       fontSize: 30,
+              //       fontWeight: FontWeight.bold,
+              //       color: Appcolors.White
+              //     ),
+              // )
+              // ),
+                  Expanded(
+                    child: Container(
+                            decoration:BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                topRight: Radius.circular(30),
+                              ),
+                              color: Appcolors.White
 
-              Positioned(
-                top: size.height*0.32,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                    decoration:BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      color: Appcolors.White
-
-                    ) ,
-                    child: child,
-                ))
+                            ) ,
+                            child: child,
+                        ))
         ],
       ),
 
