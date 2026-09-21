@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class WaterTrackerPage extends StatefulWidget {
   const WaterTrackerPage({
@@ -52,6 +53,7 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final progress = (_waterMl / widget.goalMl).clamp(0.0, 1.0);
     final remaining = (widget.goalMl - _waterMl).clamp(0, widget.goalMl);
 
@@ -62,15 +64,15 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Water Tracking',
+        title: Text(
+          strings.text('waterTracking'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           TextButton(
             onPressed: _reset,
-            child: const Text(
-              'Reset',
+            child: Text(
+              strings.text('reset'),
               style: TextStyle(color: Appcolors.SecondaryOrange),
             ),
           ),
@@ -95,8 +97,8 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
                         remaining: remaining,
                       ),
                       const SizedBox(height: 24),
-                      const Text(
-                        'Add water',
+                      Text(
+                strings.text('addWater'),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -137,8 +139,8 @@ class _WaterTrackerPageState extends State<WaterTrackerPage> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Save today\'s water',
+                  child: Text(
+                  strings.text('saveWater'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -168,6 +170,7 @@ class _WaterSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -194,14 +197,14 @@ class _WaterSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '🔥 $streak day water streak',
+            strings.waterStreak(streak),
             style: const TextStyle(
               color: Appcolors.SecondaryOrange,
               fontWeight: FontWeight.w600,
             ),
           ),
           Text(
-            'of $goalMl ml daily goal',
+            strings.waterGoalDescription(goalMl),
             style: const TextStyle(color: Appcolors.Grey2),
           ),
           const SizedBox(height: 20),
@@ -217,8 +220,8 @@ class _WaterSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             remaining == 0
-                ? 'Great! You reached today\'s water goal.'
-                : '$remaining ml remaining today',
+                ? strings.text('waterGoalReached')
+                : strings.waterRemaining(remaining),
             style: const TextStyle(
               color: Appcolors.Grey1,
               fontWeight: FontWeight.w600,
@@ -243,6 +246,7 @@ class _HydrationPaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final now = DateTime.now();
     final currentMinutes = now.hour * 60 + now.minute;
     const startMinutes = _dayStartHour * 60;
@@ -272,15 +276,15 @@ class _HydrationPaceCard extends StatelessWidget {
         ? Icons.schedule_rounded
         : Icons.water_drop_outlined;
     final String headline = isGoalDone
-        ? 'You are fully hydrated for today'
+        ? strings.text('hydratedToday')
         : isOnTrack
-        ? 'You are on a healthy pace'
-        : 'A small catch-up will help';
+        ? strings.text('healthyPace')
+        : strings.text('catchUp');
     final String explanation = isGoalDone
-        ? 'Keep drinking when you feel thirsty, but there is no need to rush.'
+        ? strings.text('waterGoalDoneMessage')
         : isOnTrack
-        ? 'Your intake is close to the pace needed to reach your goal by 10 PM.'
-        : 'You are ${difference.abs()} ml behind a steady pace. One planned drink is enough to get closer.';
+        ? strings.text('waterOnTrackMessage')
+        : strings.waterBehindPace(difference.abs());
 
     return Container(
       width: double.infinity,
@@ -316,8 +320,8 @@ class _HydrationPaceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Your hydration pace',
+                    Text(
+                      strings.text('hydrationPace'),
                       style: TextStyle(
                         color: Appcolors.Grey1,
                         fontSize: 12,
@@ -359,7 +363,7 @@ class _HydrationPaceCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Next gentle target: drink $nextSipMl ml in the next 2 hours.',
+                      strings.nextWaterTarget(nextSipMl),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         color: Appcolors.Black2,
@@ -372,7 +376,7 @@ class _HydrationPaceCard extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           Text(
-            'Pace guide uses an 8 AM–10 PM day. It is a wellness guide, not medical advice.',
+            strings.text('waterPaceDisclaimer'),
             style: TextStyle(color: Appcolors.Grey2, fontSize: 11),
           ),
         ],

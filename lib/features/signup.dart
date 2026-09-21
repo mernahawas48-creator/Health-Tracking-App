@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditrack/features/authview.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/features/custom_text_form_field.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class SignupPage extends StatefulWidget {
   
@@ -17,6 +18,7 @@ class _SignupPage extends State<SignupPage> {
   final confirmPasswordController = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return AuthLayout(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -25,43 +27,30 @@ class _SignupPage extends State<SignupPage> {
             padding: EdgeInsetsGeometry.symmetric(
               vertical: MediaQuery.sizeOf(context).width*0.05
             ) ,
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(
-                  text: 'Let\'s',
-                  style: TextStyle(
-                    color: Appcolors.Primary,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 30
-                  )
-                ),
-                TextSpan(
-                  text: ' Sign up',
-                  style: TextStyle(
-                    color: Appcolors.Black,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 25
-                  )
-                ),
-              ])
+            child: Text(
+              strings.text('signupTitle'),
+              style: const TextStyle(
+                color: Appcolors.Primary,
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.bold,
+                fontSize: 30,
+              ),
             ),
             ),
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.01,),
             SizedBox(
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
-                  LabelText: 'Email', 
-                  hintText: 'Enter your email', 
+                  LabelText: strings.text('email'),
+                  hintText: strings.text('enterEmail'),
                   prefixIcon: Icons.email_outlined,
                   validator: (value){
                     if (value == null || value.isEmpty){
-                      return 'Please enter your email';
+                      return strings.text('enterEmailError');
                     }
                     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
                     if (!emailRegex.hasMatch(value)){
-                      return 'Please enter a valid email';
+                      return strings.text('validEmailError');
                     }
                     return null;
                   },
@@ -73,26 +62,26 @@ class _SignupPage extends State<SignupPage> {
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
                 controller: passwordController,
-                LabelText: 'Password', 
+                LabelText: strings.text('password'),
                 hintText: '.... .... ....', 
                 prefixIcon: Icons.lock_outline,
                 validator: (value) {
                     if(value==null || value.isEmpty){
-                      return 'Please enter your password';
+                      return strings.text('enterPasswordError');
                     }
                     if(value.length < 8){
-                      return 'Password must be at least 8 characters';
+                      return strings.text('passwordLengthError');
                     }
                      if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return 'Password must contain an uppercase letter';
+                      return strings.text('passwordUppercase');
                     }
 
                     if (!RegExp(r'[a-z]').hasMatch(value)) {
-                      return 'Password must contain a lowercase letter';
+                      return strings.text('passwordLowercase');
                     }
 
                     if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return 'Password must contain a number';
+                      return strings.text('passwordNumber');
                     }
 
                     return null;
@@ -106,15 +95,15 @@ class _SignupPage extends State<SignupPage> {
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
                 controller: confirmPasswordController,
-                LabelText: 'Confirm Password', 
+                LabelText: strings.text('confirmPassword'),
                 hintText: '.... .... ....', 
                 prefixIcon: Icons.lock_outline,
                 validator: (value) {
                     if(value==null || value.isEmpty){
-                      return 'Please enter your password';
+                      return strings.text('enterPasswordError');
                     }
                     if(value != passwordController.text){
-                      return 'Password do not match';
+                      return strings.text('passwordMismatch');
                     }
                     return null;
                   } ,
@@ -139,7 +128,7 @@ class _SignupPage extends State<SignupPage> {
 
               }, 
               child: Text(
-                'Sign up',
+                strings.text('signUp'),
                 style: TextStyle(
                   color: Appcolors.White,
                   fontSize: 25,
@@ -160,7 +149,7 @@ class _SignupPage extends State<SignupPage> {
                     horizontal: MediaQuery.sizeOf(context).width*0.05,
                   ),
                   child: Text(
-                    'or continue with',
+                    strings.text('orContinue'),
                     style: TextStyle(
                       fontSize: 14,
                       color: Appcolors.Black2,
@@ -198,7 +187,7 @@ class _SignupPage extends State<SignupPage> {
 
                 },
                 child: Text(
-                  'Need Help?',
+                  strings.text('needHelp'),
                   style: TextStyle(
                   color: Appcolors.Primary,
                   fontSize: 16,

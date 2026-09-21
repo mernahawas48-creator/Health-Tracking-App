@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class SleepTrackerPage extends StatefulWidget {
   const SleepTrackerPage({
@@ -79,23 +80,23 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
         : '$hours h $remainingMinutes min';
   }
 
-  _SleepGuidance get _guidance {
+  _SleepGuidance _guidance(AppStrings strings) {
     if (_sleepMinutes < 7 * 60) {
-      return const _SleepGuidance(
-        message: 'Below the recommended adult sleep range.',
+      return _SleepGuidance(
+        message: strings.text('sleepBelow'),
         color: Appcolors.SecondaryOrange,
         icon: Icons.info_outline_rounded,
       );
     }
     if (_sleepMinutes <= 9 * 60) {
-      return const _SleepGuidance(
-        message: 'Great — this is the recommended 7–9 hour range.',
+      return _SleepGuidance(
+        message: strings.text('sleepRecommended'),
         color: Appcolors.Primary,
         icon: Icons.check_circle_outline_rounded,
       );
     }
-    return const _SleepGuidance(
-      message: 'Above the usual 7–9 hour range for adults.',
+    return _SleepGuidance(
+      message: strings.text('sleepAbove'),
       color: Colors.indigo,
       icon: Icons.info_outline_rounded,
     );
@@ -103,8 +104,9 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final progress = (_sleepMinutes / widget.goalMinutes).clamp(0.0, 1.0);
-    final guidance = _guidance;
+    final guidance = _guidance(strings);
 
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
@@ -113,8 +115,8 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Sleep Schedule',
+        title: Text(
+          strings.text('sleepSchedule'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -134,14 +136,14 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
                   Row(
                     children: [
                       _TimeSection(
-                        title: 'BEDTIME',
+                        title: strings.text('bedtime'),
                         icon: Icons.bedtime_rounded,
                         time: _bedtime.format(context),
                         onTap: _pickBedtime,
                       ),
                       Container(width: 1, height: 72, color: Appcolors.Grey3),
                       _TimeSection(
-                        title: 'WAKE UP',
+                        title: strings.text('wakeUp'),
                         icon: Icons.alarm_rounded,
                         time: _wakeUpTime.format(context),
                         onTap: _pickWakeUpTime,
@@ -174,8 +176,8 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
                             color: Colors.indigo,
                           ),
                         ),
-                        const Text(
-                          'scheduled sleep',
+                        Text(
+                          strings.text('scheduledSleep'),
                           style: TextStyle(color: Appcolors.Grey1),
                         ),
                       ],
@@ -209,7 +211,7 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '🔥 $_streak day healthy-sleep streak',
+                    strings.sleepStreak(_streak),
                     style: const TextStyle(
                       color: Appcolors.SecondaryOrange,
                       fontWeight: FontWeight.w600,
@@ -226,22 +228,22 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
                 color: const Color(0xffEEF8F8),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Healthy sleep guide',
+                    strings.text('sleepGuide'),
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '• Less than 7 hours: usually too little for most adults.',
+                    strings.text('lessThanSeven'),
                   ),
                   SizedBox(height: 5),
-                  Text('• 7–9 hours: the recommended adult range.'),
+                  Text(strings.text('sevenToNine')),
                   SizedBox(height: 5),
                   Text(
-                    '• More than 9 hours: may be more than most adults need.',
+                    strings.text('moreThanNine'),
                   ),
                 ],
               ),
@@ -259,8 +261,8 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Save sleep schedule',
+                child: Text(
+                  strings.text('saveSleep'),
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

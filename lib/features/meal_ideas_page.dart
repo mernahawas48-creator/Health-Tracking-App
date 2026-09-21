@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class MealIdeasPage extends StatelessWidget {
   const MealIdeasPage({super.key, required this.remainingCalories});
@@ -51,6 +52,7 @@ class MealIdeasPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final ideas = _ideas;
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
@@ -59,8 +61,8 @@ class MealIdeasPage extends StatelessWidget {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Healthy Meal Ideas',
+        title: Text(
+          strings.text('mealIdeas'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -82,7 +84,7 @@ class MealIdeasPage extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '${remainingCalories.round()} kcal remaining today. These ideas fit your remaining target.',
+                    '${AppStrings.of(context).caloriesRemaining(remainingCalories.round())}. ${AppStrings.of(context).text('remainingIdeas')}',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -90,16 +92,16 @@ class MealIdeasPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Suggested for you',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Text(
+            strings.text('suggestedForYou'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...ideas.map((idea) => _MealIdeaCard(idea: idea)),
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 12, bottom: 24),
             child: Text(
-              'Suggestions are general wellness ideas, not medical or dietary advice.',
+              strings.text('suggestionsDisclaimer'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Appcolors.Grey2, fontSize: 12),
             ),
@@ -179,14 +181,14 @@ class _MealIdeaCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      idea.name,
+                      AppStrings.of(context).mealIdea(idea.name),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      idea.meal,
+                      AppStrings.of(context).mealLabel(idea.meal.toLowerCase()),
                       style: const TextStyle(color: Appcolors.Grey2),
                     ),
                   ],
@@ -203,12 +205,14 @@ class _MealIdeaCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            idea.ingredients.join(' • '),
+            idea.ingredients
+                .map(AppStrings.of(context).ingredient)
+                .join(' • '),
             style: const TextStyle(color: Appcolors.Grey1),
           ),
           const SizedBox(height: 12),
           Text(
-            'Protein ${idea.protein}g   Carbs ${idea.carbs}g   Fat ${idea.fat}g',
+            '${AppStrings.of(context).text('protein')} ${idea.protein}g   ${AppStrings.of(context).text('carbs')} ${idea.carbs}g   ${AppStrings.of(context).text('fat')} ${idea.fat}g',
             style: const TextStyle(fontSize: 12, color: Appcolors.Grey2),
           ),
           const SizedBox(height: 14),
@@ -217,7 +221,7 @@ class _MealIdeaCard extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => _addToLog(context),
               icon: const Icon(Icons.add),
-              label: const Text('Add to today\'s meals'),
+              label: Text(AppStrings.of(context).text('addToMeals')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Appcolors.Primary,
               ),

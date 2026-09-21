@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class FirstPage extends StatelessWidget {
   const FirstPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Scaffold(
       backgroundColor: Appcolors.White,
       body: SafeArea(
@@ -16,27 +18,13 @@ class FirstPage extends StatelessWidget {
               'assets/images/first_time_question.png',
             ),
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.05,),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Is this your ',
-                    style: TextStyle(
-                      color: Appcolors.Black2,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold
-                    )
-                  ),
-                  TextSpan(
-                    text: 'first time ?',
-                    style: TextStyle(
-                      color: Appcolors.Primary,
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold
-                    )
-                  ),
-                ]
-              )
+            Text(
+              strings.text('firstTimeQuestion'),
+              style: const TextStyle(
+                color: Appcolors.Black2,
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.05,),
@@ -57,7 +45,7 @@ class FirstPage extends StatelessWidget {
                 Navigator.pushNamed(context, '/onboarding');
               }, 
               child: Text(
-                'Yes',
+                strings.text('yes'),
                 style: TextStyle(
                   color: Appcolors.White,
                   fontSize: 25,
@@ -85,7 +73,7 @@ class FirstPage extends StatelessWidget {
 
               }, 
               child: Text(
-                'No',
+                strings.text('no'),
                 style: TextStyle(
                   color: Appcolors.White,
                   fontSize: 25,

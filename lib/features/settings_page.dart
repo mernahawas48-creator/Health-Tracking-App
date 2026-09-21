@@ -49,7 +49,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.flag_outlined,
                     title: s.text('dailyGoals'),
                     subtitle:
-                        '${settings.waterGoalMl} ml water • ${settings.sleepGoalMinutes ~/ 60} h sleep',
+                        '${settings.waterGoalMl} ml ${s.text('water').toLowerCase()} • ${settings.sleepGoalMinutes ~/ 60} ${s.text('hours')} ${s.text('sleep').toLowerCase()}',
                     onTap: () => _openGoals(context),
                   ),
                 ],
@@ -66,9 +66,9 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.dark_mode_outlined,
                     title: s.text('theme'),
                     value: settings.theme,
-                    label: _themeLabel(settings.theme),
+                    label: _themeLabel(settings.theme, s),
                     values: AppThemePreference.values,
-                    itemLabel: _themeLabel,
+                    itemLabel: (value) => _themeLabel(value, s),
                     onChanged: (value) =>
                         controller.update(settings.copyWith(theme: value)),
                   ),
@@ -129,15 +129,14 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  String _themeLabel(AppThemePreference value) {
-    // This context-independent fallback is only used by the dropdown labels.
+  String _themeLabel(AppThemePreference value, AppStrings strings) {
     switch (value) {
       case AppThemePreference.system:
-        return 'System default';
+        return strings.text('systemDefault');
       case AppThemePreference.light:
-        return 'Light';
+        return strings.text('light');
       case AppThemePreference.dark:
-        return 'Dark';
+        return strings.text('dark');
     }
   }
 }
@@ -202,8 +201,8 @@ class _GoalsPageState extends State<_GoalsPage> {
         nutrition < 800 ||
         nutrition > 6000) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter realistic values for every goal.'),
+        SnackBar(
+          content: Text(AppStrings.of(context).text('invalidGoals')),
         ),
       );
       return;

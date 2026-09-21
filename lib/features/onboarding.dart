@@ -38,52 +38,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: PopupMenuButton<String>(
-                tooltip: strings.text('language'),
-                onSelected: (languageCode) => settingsController.update(
-                  settingsController.settings.copyWith(
-                    languageCode: languageCode,
-                  ),
+                onSelected: (code) => settingsController.update(
+                  settingsController.settings.copyWith(languageCode: code),
                 ),
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'en',
-                    child: Text(strings.text('english')),
-                  ),
-                  PopupMenuItem(
-                    value: 'ar',
-                    child: Text(strings.text('arabic')),
-                  ),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'en', child: Text('English')),
+                  PopupMenuItem(value: 'ar', child: Text('العربية')),
                 ],
-                child: Container(
-                  margin: const EdgeInsetsDirectional.only(top: 8, end: 20),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xffE3F7F8),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.language_rounded,
-                        color: Appcolors.Primary,
-                        size: 19,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        strings.isArabic
-                            ? strings.text('arabic')
-                            : strings.text('english'),
-                        style: const TextStyle(
-                          color: Appcolors.Primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(top: 12, end: 20),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.language_rounded, color: Appcolors.Primary),
+                    const SizedBox(width: 6),
+                    Text(strings.isArabic ? 'العربية' : 'English', style: const TextStyle(color: Appcolors.Primary, fontWeight: FontWeight.bold)),
+                  ]),
                 ),
               ),
             ),

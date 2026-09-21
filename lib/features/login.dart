@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditrack/features/authview.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/features/custom_text_form_field.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,6 +14,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return AuthLayout(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -23,7 +25,7 @@ class _LoginPageState extends State<LoginPage> {
               vertical: MediaQuery.sizeOf(context).height*0.02
             ),
             child:Text(
-            'Hey, Welcome back!',
+            strings.text('loginWelcome'),
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.bold,
@@ -38,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
               vertical: MediaQuery.sizeOf(context).height*0.0001
             ),
             child:Text(
-            'Glad to see you, Again!',
+            strings.text('loginSubtitle'),
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -50,16 +52,16 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
-                  LabelText: 'Email', 
-                  hintText: 'Enter your email', 
+                  LabelText: strings.text('email'),
+                  hintText: strings.text('enterEmail'),
                   prefixIcon: Icons.email_outlined,
                   validator: (value){
                     if (value == null || value.isEmpty){
-                      return 'Please enter your email';
+                      return strings.text('enterEmailError');
                     }
                     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
                     if (!emailRegex.hasMatch(value)){
-                      return 'Please enter a valid email';
+                      return strings.text('validEmailError');
                     }
                     return null;
                   },
@@ -70,26 +72,26 @@ class _LoginPageState extends State<LoginPage> {
             SizedBox(
               width: MediaQuery.sizeOf(context).width *0.9,
               child: CustomTextFormField(
-                LabelText: 'Password', 
+                LabelText: strings.text('password'),
                 hintText: '.... .... ....', 
                 prefixIcon: Icons.lock_outline,
                 validator: (value) {
                     if(value==null || value.isEmpty){
-                      return 'Please enter your password';
+                      return strings.text('enterPasswordError');
                     }
                     if(value.length < 8){
-                      return 'Password must be at least 8 characters';
+                      return strings.text('passwordLengthError');
                     }
                      if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return 'Password must contain an uppercase letter';
+                      return strings.text('passwordUppercase');
                     }
 
                     if (!RegExp(r'[a-z]').hasMatch(value)) {
-                      return 'Password must contain a lowercase letter';
+                      return strings.text('passwordLowercase');
                     }
 
                     if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return 'Password must contain a number';
+                      return strings.text('passwordNumber');
                     }
 
                     return null;
@@ -114,7 +116,7 @@ class _LoginPageState extends State<LoginPage> {
 
               }, 
               child: Text(
-                'Log in',
+                strings.text('login'),
                 style: TextStyle(
                   color: Appcolors.White,
                   fontSize: 25,
@@ -134,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                     horizontal: MediaQuery.sizeOf(context).width*0.05,
                   ),
                   child: Text(
-                    'or continue with',
+                    strings.text('orContinue'),
                     style: TextStyle(
                       fontSize: 14,
                       color: Appcolors.Black2,
@@ -172,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 },
                 child: Text(
-                  'Need Help?',
+                  strings.text('needHelp'),
                   style: TextStyle(
                   color: Appcolors.Primary,
                   fontSize: 16,

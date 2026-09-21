@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/features/medications/models/medication.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class AddMedicationPage extends StatefulWidget {
   const AddMedicationPage({super.key});
@@ -60,6 +61,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
       appBar: AppBar(
@@ -67,8 +69,8 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Add Medication',
+        title: Text(
+          strings.text('addMedicationTitle'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -80,28 +82,28 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Medication details',
+                Text(
+                  strings.text('medicationDetails'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Set one reminder now. You can add more doses later.',
+                Text(
+                  strings.text('addMedicationDescription'),
                   style: TextStyle(color: Appcolors.Grey2),
                 ),
                 const SizedBox(height: 24),
                 _TextInput(
-                  label: 'Medication name',
-                  hint: 'Example: Paracetamol',
+                  label: strings.text('medicationName'),
+                  hint: strings.text('exampleParacetamol'),
                   icon: Icons.medication_outlined,
                   controller: _nameController,
                   validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Enter the medication name'
+                      ? strings.text('enterMedicationName')
                       : null,
                 ),
                 const SizedBox(height: 18),
-                const Text(
-                  'Medication type',
+                Text(
+                  strings.text('medicationType'),
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
@@ -118,7 +120,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                                 ? Appcolors.White
                                 : Appcolors.Primary,
                           ),
-                          label: Text(type.label),
+                          label: Text(strings.medicationType(type.name)),
                           selected: _type == type,
                           selectedColor: Appcolors.Primary,
                           labelStyle: TextStyle(
@@ -139,17 +141,17 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                 ),
                 const SizedBox(height: 18),
                 _TextInput(
-                  label: 'Dosage',
-                  hint: 'Example: 500 mg or 2 tablets',
+                  label: strings.text('dosage'),
+                  hint: strings.text('exampleDosage'),
                   icon: Icons.medical_information_outlined,
                   controller: _dosageController,
                   validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Enter the dosage'
+                      ? strings.text('enterDosage')
                       : null,
                 ),
                 const SizedBox(height: 18),
-                const Text(
-                  'Frequency',
+                Text(
+                  strings.text('frequency'),
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
@@ -160,7 +162,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                       .map(
                         (frequency) => DropdownMenuItem(
                           value: frequency,
-                          child: Text(frequency.label),
+                          child: Text(strings.medicationFrequency(frequency.name)),
                         ),
                       )
                       .toList(),
@@ -168,14 +170,14 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                 ),
                 if (_frequency == MedicationFrequency.asNeeded) ...[
                   const SizedBox(height: 8),
-                  const Text(
-                    'As-needed medicines are saved but do not create automatic reminders.',
-                    style: TextStyle(color: Appcolors.Grey2, fontSize: 12),
+                  Text(
+                    strings.text('asNeededDescription'),
+                    style: const TextStyle(color: Appcolors.Grey2, fontSize: 12),
                   ),
                 ],
                 const SizedBox(height: 18),
                 _SelectionTile(
-                  label: 'Start date',
+                  label: strings.text('startDate'),
                   value:
                       '${_startDate.day.toString().padLeft(2, '0')}/${_startDate.month.toString().padLeft(2, '0')}/${_startDate.year}',
                   icon: Icons.calendar_today_outlined,
@@ -183,15 +185,15 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                 ),
                 const SizedBox(height: 14),
                 _SelectionTile(
-                  label: 'Reminder time',
+                  label: strings.text('reminderTime'),
                   value: _time.format(context),
                   icon: Icons.access_time_rounded,
                   onTap: _selectTime,
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'When do you take it?',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  strings.text('takeMedication'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -200,7 +202,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                   children: MealRelation.values
                       .map(
                         (relation) => ChoiceChip(
-                          label: Text(relation.label),
+                          label: Text(strings.mealRelation(relation.name)),
                           selected: _mealRelation == relation,
                           selectedColor: Appcolors.Primary,
                           labelStyle: TextStyle(
@@ -233,8 +235,8 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text(
-                      'Save Medication',
+                    child: Text(
+                      strings.text('saveMedication'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

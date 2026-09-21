@@ -3,6 +3,7 @@ import 'package:meditrack/features/food_search_page.dart';
 import 'package:meditrack/features/meal_ideas_page.dart';
 import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class NutritionPage extends StatefulWidget {
   const NutritionPage({
@@ -41,18 +42,19 @@ class _NutritionPageState extends State<NutritionPage> {
       (widget.calorieGoal - _consumed).clamp(0, widget.calorieGoal.toDouble());
   double get _progress => (_consumed / widget.calorieGoal).clamp(0, 1);
 
-  String get _suggestion {
+  String _suggestion(AppStrings strings) {
     if (_remaining == 0)
-      return 'You reached today\'s calorie goal. Choose water or a light snack if needed.';
+      return strings.text('nutritionGoalReached');
     if (_remaining <= 250)
-      return 'Light option: Greek yogurt with fruit, or an apple with a few nuts.';
+      return strings.text('nutritionLightSuggestion');
     if (_remaining <= 500)
-      return 'Balanced option: grilled chicken, vegetables, and a small serving of rice.';
-    return 'You have room for a balanced meal: protein, vegetables, and a whole-grain carbohydrate.';
+      return strings.text('nutritionBalancedSuggestion');
+    return strings.text('nutritionRoomSuggestion');
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
       appBar: AppBar(
@@ -60,8 +62,8 @@ class _NutritionPageState extends State<NutritionPage> {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Nutrition',
+        title: Text(
+          strings.text('nutrition'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -70,7 +72,7 @@ class _NutritionPageState extends State<NutritionPage> {
         backgroundColor: Appcolors.Primary,
         foregroundColor: Appcolors.White,
         icon: const Icon(Icons.search),
-        label: const Text('Search food'),
+        label: Text(strings.text('searchFood')),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -85,8 +87,8 @@ class _NutritionPageState extends State<NutritionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Today\'s calories',
+                Text(
+                  strings.text('todayCalories'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
@@ -110,7 +112,7 @@ class _NutritionPageState extends State<NutritionPage> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '${_remaining.round()} kcal remaining',
+                  strings.caloriesRemaining(_remaining.round()),
                   style: const TextStyle(color: Appcolors.Grey1),
                 ),
               ],
@@ -126,7 +128,7 @@ class _NutritionPageState extends State<NutritionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
                       Icons.lightbulb_outline_rounded,
@@ -134,8 +136,8 @@ class _NutritionPageState extends State<NutritionPage> {
                     ),
                     SizedBox(width: 8),
                     Text(
-                      'Healthy suggestion',
-                      style: TextStyle(
+                      strings.text('healthySuggestion'),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -143,24 +145,24 @@ class _NutritionPageState extends State<NutritionPage> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(_suggestion),
+                Text(_suggestion(strings)),
                 const SizedBox(height: 10),
                 TextButton.icon(
                   onPressed: _openMealIdeas,
                   icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Browse healthy meal ideas'),
+                  label: Text(strings.text('mealIdeas')),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Today\'s meals',
+          Text(
+            strings.text('todayMeals'),
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           if (widget.foodLogs.isEmpty)
-            const _EmptyMeals()
+            _EmptyMeals()
           else
             ...MealType.values.map(
               (meal) => _MealSection(
@@ -180,7 +182,7 @@ class _NutritionPageState extends State<NutritionPage> {
 class _EmptyMeals extends StatelessWidget {
   const _EmptyMeals();
   @override
-  Widget build(BuildContext context) => const Padding(
+  Widget build(BuildContext context) => Padding(
     padding: EdgeInsets.only(top: 24),
     child: Center(
       child: Column(
@@ -188,8 +190,8 @@ class _EmptyMeals extends StatelessWidget {
           Icon(Icons.restaurant_menu_rounded, size: 48, color: Appcolors.Grey2),
           SizedBox(height: 8),
           Text(
-            'No meals logged today',
-            style: TextStyle(color: Appcolors.Grey2),
+            AppStrings.of(context).text('noMealsLogged'),
+            style: const TextStyle(color: Appcolors.Grey2),
           ),
         ],
       ),
@@ -215,7 +217,7 @@ class _MealSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            meal.label,
+            AppStrings.of(context).mealLabel(meal.name),
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 10),

@@ -11,6 +11,7 @@ import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
 import 'package:meditrack/services/medication_repository.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -182,6 +183,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
       body: Stack(
@@ -194,7 +196,7 @@ class _HomePageState extends State<HomePage> {
                   )
                 : Column(
                     children: [
-                      _header(),
+                _header(strings),
                       Transform.translate(
                         offset: const Offset(0, -50),
                         child: Padding(
@@ -249,8 +251,8 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 3),
-          const Text(
-            'Add Alert',
+          Text(
+            AppStrings.of(context).text('addAlert'),
             style: TextStyle(
               color: Appcolors.Grey2,
               fontSize: 15,
@@ -265,18 +267,18 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _navItem(0, Icons.home_outlined, 'Home'),
-            _navItem(1, Icons.local_pharmacy_outlined, 'Meds'),
+            _navItem(0, Icons.home_outlined, strings.text('home')),
+            _navItem(1, Icons.local_pharmacy_outlined, strings.text('meds')),
             const SizedBox(width: 70),
-            _navItem(2, Icons.eco_outlined, 'Nutrition'),
-            _navItem(3, Icons.person_2_outlined, 'Profile'),
+            _navItem(2, Icons.eco_outlined, strings.text('nutrition')),
+            _navItem(3, Icons.person_2_outlined, strings.text('profile')),
           ],
         ),
       ),
     );
   }
 
-  Widget _header() => Container(
+  Widget _header(AppStrings strings) => Container(
     width: double.infinity,
     height: 203,
     color: Appcolors.Primary,
@@ -290,9 +292,9 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Welcome 👋',
-                style: TextStyle(
+              Text(
+                '${strings.text('welcome')} 👋',
+                style: const TextStyle(
                   color: Appcolors.White,
                   fontFamily: 'Inter',
                   fontSize: 17,
@@ -346,19 +348,19 @@ class _HomePageState extends State<HomePage> {
     return _card(
       child: Column(
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.medication_outlined, color: Appcolors.SecondaryOrange),
               SizedBox(width: 8),
               Text(
-                'Upcoming Medication',
+                AppStrings.of(context).text('upcomingMedication'),
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 20),
           if (medication == null)
-            const Column(
+            Column(
               children: [
                 Icon(
                   Icons.notifications_none,
@@ -367,12 +369,12 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'No reminders yet',
+                  AppStrings.of(context).text('noReminders'),
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 5),
                 Text(
-                  'Add your first medication',
+                  AppStrings.of(context).text('addFirstMedication'),
                   style: TextStyle(color: Appcolors.Grey2),
                 ),
               ],
@@ -391,12 +393,12 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${medication.type.label} • ${medication.dosage}',
+                  '${AppStrings.of(context).medicationType(medication.type.name)} • ${medication.dosage}',
                   style: const TextStyle(color: Appcolors.Grey2),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Next reminder: ${medication.formattedTime}',
+                  '${AppStrings.of(context).text('nextReminder')}: ${medication.formattedTime}',
                   style: const TextStyle(
                     color: Appcolors.Primary,
                     fontWeight: FontWeight.w600,
@@ -410,7 +412,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _activityCard() => _card(
-    child: const Column(
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -418,7 +420,7 @@ class _HomePageState extends State<HomePage> {
             Icon(Icons.directions_walk, color: Appcolors.Primary),
             SizedBox(width: 8),
             Text(
-              'Activity',
+              AppStrings.of(context).text('activity'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
@@ -427,8 +429,8 @@ class _HomePageState extends State<HomePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Burned Calories', style: TextStyle(fontSize: 15)),
-            Text('0 / 300 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppStrings.of(context).text('burnedCalories'), style: const TextStyle(fontSize: 15)),
+            const Text('0 / 300 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         SizedBox(height: 10),
@@ -445,14 +447,14 @@ class _HomePageState extends State<HomePage> {
               child: _ActivityValue(
                 icon: Icons.directions_walk,
                 value: '0',
-                label: 'Steps',
+                label: AppStrings.of(context).text('steps'),
               ),
             ),
             Expanded(
               child: _ActivityValue(
                 icon: Icons.route_outlined,
                 value: '0.0 km',
-                label: 'Distance',
+                label: AppStrings.of(context).text('distance'),
               ),
             ),
           ],
@@ -467,8 +469,8 @@ class _HomePageState extends State<HomePage> {
         child: _smallCard(
           icon: Icons.water_drop_outlined,
           iconColor: Colors.blue,
-          title: 'Water',
-          value: '$_waterMl / $_waterGoalMl ml\n🔥 $_waterStreak day streak',
+          title: AppStrings.of(context).text('water'),
+          value: '$_waterMl / $_waterGoalMl ml\n${AppStrings.of(context).dayStreak(_waterStreak)}',
           onTap: _openWaterTracker,
         ),
       ),
@@ -477,10 +479,10 @@ class _HomePageState extends State<HomePage> {
         child: _smallCard(
           icon: Icons.bedtime_outlined,
           iconColor: Colors.indigo,
-          title: 'Sleep',
+          title: AppStrings.of(context).text('sleep'),
           value: _sleepMinutes == 0
-              ? 'No sleep logged\n🔥 $_sleepStreak day streak'
-              : '${_formatDuration(_sleepMinutes)} / ${_formatDuration(_sleepGoalMinutes)}\n🔥 $_sleepStreak day streak',
+              ? '${AppStrings.of(context).text('noSleepLogged')}\n${AppStrings.of(context).dayStreak(_sleepStreak)}'
+              : '${_formatDuration(_sleepMinutes)} / ${_formatDuration(_sleepGoalMinutes)}\n${AppStrings.of(context).dayStreak(_sleepStreak)}',
           onTap: _openSleepTracker,
         ),
       ),
@@ -523,13 +525,13 @@ class _HomePageState extends State<HomePage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Today's Medications",
+        Text(
+          AppStrings.of(context).text('todayMedications'),
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
         if (_today.isEmpty)
-          const Center(
+          Center(
             child: Column(
               children: [
                 Icon(
@@ -539,7 +541,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'No medications scheduled for today',
+                  AppStrings.of(context).text('noMedicationsToday'),
                   style: TextStyle(color: Appcolors.Grey2),
                 ),
               ],
@@ -574,7 +576,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${medication.type.label} • ${medication.dosage}',
+                          '${AppStrings.of(context).medicationType(medication.type.name)} • ${medication.dosage}',
                           style: const TextStyle(
                             color: Appcolors.Grey2,
                             fontSize: 13,
@@ -694,8 +696,8 @@ class _MedicationHomeStatus extends StatelessWidget {
           Expanded(
             child: Text(
               complete
-                  ? 'All doses completed • ${summary.streakDays} day streak'
-                  : '${summary.takenCount}/${summary.scheduledCount} doses taken • ${summary.streakDays} day streak',
+                  ? '${AppStrings.of(context).text('allDosesCompleted')} • ${AppStrings.of(context).dayStreak(summary.streakDays)}'
+                  : AppStrings.of(context).medicationHomeProgress(taken: summary.takenCount, total: summary.scheduledCount, streak: summary.streakDays),
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),

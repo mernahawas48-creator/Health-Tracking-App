@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditrack/features/settings_page.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({
@@ -48,11 +49,14 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showComingSoon(String feature) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('$feature will be available soon.')));
+    ).showSnackBar(
+      SnackBar(content: Text('$feature ${AppStrings.of(context).text('comingSoon')}')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final settingsController = AppSettingsScope.of(context);
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
@@ -61,8 +65,8 @@ class _ProfilePageState extends State<ProfilePage> {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Profile',
+        title: Text(
+          strings.text('profile'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -73,8 +77,8 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             _ProfileHeader(name: _name, onEdit: _openEditProfile),
             const SizedBox(height: 22),
-            const Text(
-              'Your health plan',
+            Text(
+              strings.text('healthPlan'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -89,8 +93,8 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Preferences',
+            Text(
+              strings.text('preferences'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -98,8 +102,8 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _SettingsTile(
                   icon: Icons.person_outline_rounded,
-                  title: 'Personal details',
-                  subtitle: 'Name and health goal',
+                  title: strings.text('personalDetails'),
+                  subtitle: strings.text('nameHealthGoal'),
                   onTap: _openEditProfile,
                 ),
                 _SettingsDivider(),
@@ -112,8 +116,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 _SettingsDivider(),
                 _SettingsTile(
                   icon: Icons.settings_outlined,
-                  title: 'App settings',
-                  subtitle: 'Goals, theme, language and units',
+                  title: strings.text('appSettings'),
+                  subtitle: strings.text('settingsDescription'),
                   onTap: () => Navigator.push<void>(
                     context,
                     MaterialPageRoute(
@@ -125,8 +129,8 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Support',
+            Text(
+              strings.text('support'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -134,22 +138,22 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _SettingsTile(
                   icon: Icons.help_outline_rounded,
-                  title: 'Help and support',
-                  onTap: () => _showComingSoon('Help and support'),
+                  title: strings.text('helpSupport'),
+                  onTap: () => _showComingSoon(strings.text('helpSupport')),
                 ),
                 _SettingsDivider(),
                 _SettingsTile(
                   icon: Icons.privacy_tip_outlined,
-                  title: 'Privacy',
-                  onTap: () => _showComingSoon('Privacy settings'),
+                  title: strings.text('privacy'),
+                  onTap: () => _showComingSoon(strings.text('privacy')),
                 ),
               ],
             ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
-              onPressed: () => _showComingSoon('Sign out'),
+              onPressed: () => _showComingSoon(strings.text('signOut')),
               icon: const Icon(Icons.logout_rounded),
-              label: const Text('Sign out'),
+              label: Text(strings.text('signOut')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Appcolors.SecondaryOrange,
                 side: const BorderSide(color: Appcolors.SecondaryOrange),
@@ -160,10 +164,10 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 10),
-            const Center(
+            Center(
               child: Text(
-                'Health Tracking App',
-                style: TextStyle(color: Appcolors.Grey2, fontSize: 12),
+                strings.text('healthTrackingApp'),
+                style: const TextStyle(color: Appcolors.Grey2, fontSize: 12),
               ),
             ),
           ],
@@ -217,9 +221,9 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                const Text(
-                  'Your wellness journey',
-                  style: TextStyle(color: Color(0xffD8F6F7)),
+                Text(
+                  AppStrings.of(context).text('wellnessJourney'),
+                  style: const TextStyle(color: Color(0xffD8F6F7)),
                 ),
               ],
             ),
@@ -227,7 +231,7 @@ class _ProfileHeader extends StatelessWidget {
           IconButton(
             onPressed: onEdit,
             icon: const Icon(Icons.edit_outlined, color: Appcolors.White),
-            tooltip: 'Edit profile',
+            tooltip: AppStrings.of(context).text('editProfile'),
           ),
         ],
       ),
@@ -278,12 +282,12 @@ class _HealthPlanCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Main goal',
-                      style: TextStyle(color: Appcolors.Grey2, fontSize: 13),
+                    Text(
+                      AppStrings.of(context).text('mainGoal'),
+                      style: const TextStyle(color: Appcolors.Grey2, fontSize: 13),
                     ),
                     Text(
-                      goal,
+                      _localizedGoal(context, goal),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -300,19 +304,19 @@ class _HealthPlanCard extends StatelessWidget {
               Expanded(
                 child: _GoalValue(
                   value: '${waterGoalMl / 1000} L',
-                  label: 'Water goal',
+                  label: AppStrings.of(context).text('waterGoal'),
                 ),
               ),
               Expanded(
                 child: _GoalValue(
                   value: '${sleepGoalMinutes / 60} h',
-                  label: 'Sleep goal',
+                  label: AppStrings.of(context).text('sleepGoal'),
                 ),
               ),
               Expanded(
                 child: _GoalValue(
                   value: '$activeCaloriesGoal',
-                  label: 'Active kcal',
+                  label: AppStrings.of(context).text('activeKcal'),
                 ),
               ),
             ],
@@ -419,12 +423,14 @@ class _NotificationTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: const _SettingIcon(icon: Icons.notifications_none_rounded),
-      title: const Text(
-        'Notifications',
-        style: TextStyle(fontWeight: FontWeight.w600),
+      title: Text(
+        AppStrings.of(context).text('notifications'),
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
-        enabled ? 'Medication and daily reminders' : 'Notifications are off',
+        enabled
+            ? AppStrings.of(context).text('notificationDescription')
+            : AppStrings.of(context).text('notificationsOff'),
         style: const TextStyle(color: Appcolors.Grey2),
       ),
       trailing: Switch(
@@ -505,7 +511,9 @@ class _EditProfilePageState extends State<_EditProfilePage> {
     if (name.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter your name.')));
+      ).showSnackBar(
+        SnackBar(content: Text(AppStrings.of(context).text('enterNameError'))),
+      );
       return;
     }
     Navigator.pop(context, _ProfileEditResult(name: name, goal: _selectedGoal));
@@ -519,9 +527,9 @@ class _EditProfilePageState extends State<_EditProfilePage> {
         backgroundColor: Appcolors.White,
         foregroundColor: Appcolors.Black,
         elevation: 0,
-        title: const Text(
-          'Edit profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          AppStrings.of(context).text('editProfile'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: Padding(
@@ -529,16 +537,16 @@ class _EditProfilePageState extends State<_EditProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Your name',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppStrings.of(context).text('yourName'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                hintText: 'Enter your name',
+                hintText: AppStrings.of(context).text('enterName'),
                 filled: true,
                 fillColor: Appcolors.White,
                 border: OutlineInputBorder(
@@ -559,9 +567,9 @@ class _EditProfilePageState extends State<_EditProfilePage> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'What is your main goal?',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppStrings.of(context).text('goalQuestion'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             ..._goals.map(
@@ -570,7 +578,7 @@ class _EditProfilePageState extends State<_EditProfilePage> {
                 groupValue: _selectedGoal,
                 activeColor: Appcolors.Primary,
                 contentPadding: EdgeInsets.zero,
-                title: Text(goal),
+                title: Text(_localizedGoal(context, goal)),
                 onChanged: (value) => setState(() => _selectedGoal = value!),
               ),
             ),
@@ -587,9 +595,9 @@ class _EditProfilePageState extends State<_EditProfilePage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Save changes',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  AppStrings.of(context).text('saveChanges'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -598,4 +606,16 @@ class _EditProfilePageState extends State<_EditProfilePage> {
       ),
     );
   }
+}
+
+String _localizedGoal(BuildContext context, String goal) {
+  final strings = AppStrings.of(context);
+  return switch (goal) {
+    'Build healthy habits' => strings.text('goalBuildHabits'),
+    'Improve sleep' => strings.text('goalImproveSleep'),
+    'Stay active' => strings.text('goalStayActive'),
+    'Eat healthier' => strings.text('goalEatHealthier'),
+    'Manage medications' => strings.text('goalManageMedications'),
+    _ => goal,
+  };
 }

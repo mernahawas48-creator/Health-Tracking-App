@@ -20,7 +20,7 @@ class HealthApp extends StatelessWidget {
           final settings = settingsController.settings;
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Health Tracker',
+            title: settings.isArabic ? 'متابعة الصحة' : 'Health Tracker',
             locale: Locale(settings.languageCode),
             supportedLocales: const [Locale('en'), Locale('ar')],
             localizationsDelegates: const [

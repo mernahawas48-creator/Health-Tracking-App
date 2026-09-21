@@ -3,6 +3,7 @@ import 'package:meditrack/features/medications/add_medication_page.dart';
 import 'package:meditrack/features/medications/models/medication.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class MedicationsPage extends StatefulWidget {
   const MedicationsPage({
@@ -38,6 +39,7 @@ class _MedicationsPageState extends State<MedicationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final summary = MedicationAdherenceService.summaryForToday(
       widget.medications,
     );
@@ -49,8 +51,8 @@ class _MedicationsPageState extends State<MedicationsPage> {
         foregroundColor: Appcolors.Black,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'My Medications',
+        title: Text(
+          strings.text('myMedications'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -59,7 +61,7 @@ class _MedicationsPageState extends State<MedicationsPage> {
         backgroundColor: Appcolors.Primary,
         foregroundColor: Appcolors.White,
         icon: const Icon(Icons.add),
-        label: const Text('Add medication'),
+        label: Text(strings.text('addMedication')),
       ),
       body: widget.medications.isEmpty
           ? _EmptyMedicationList(onAdd: _addMedication)
@@ -68,15 +70,15 @@ class _MedicationsPageState extends State<MedicationsPage> {
               children: [
                 _AdherenceCard(summary: summary),
                 const SizedBox(height: 20),
-                const Text(
-                  'Today\'s schedule',
+                Text(
+                  strings.text('todaySchedule'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 ..._todayMedicationTiles(),
                 const SizedBox(height: 20),
-                const Text(
-                  'All medications',
+                Text(
+                  strings.text('allMedications'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
@@ -126,14 +128,18 @@ class _AdherenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     final color = summary.isComplete
         ? Appcolors.Primary
         : Appcolors.SecondaryOrange;
     final message = summary.scheduledCount == 0
-        ? 'No doses are scheduled for today.'
+        ? strings.text('noDosesToday')
         : summary.isComplete
-        ? 'Every scheduled dose was completed today.'
-        : '${summary.takenCount} of ${summary.scheduledCount} doses taken today.';
+        ? strings.text('allDosesToday')
+        : strings.medicationProgress(
+            taken: summary.takenCount,
+            total: summary.scheduledCount,
+          );
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -161,15 +167,15 @@ class _AdherenceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Medication adherence',
-                      style: TextStyle(
+                    Text(
+                      strings.text('medicationAdherence'),
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     Text(
-                      '🔥 ${summary.streakDays} day streak',
+                      strings.dayStreak(summary.streakDays),
                       style: const TextStyle(color: Appcolors.SecondaryOrange),
                     ),
                   ],
@@ -277,7 +283,7 @@ class _TodayDoseCard extends StatelessWidget {
                       foregroundColor: Appcolors.SecondaryOrange,
                       side: const BorderSide(color: Appcolors.SecondaryOrange),
                     ),
-                    child: const Text('Skip'),
+                    child: Text(AppStrings.of(context).text('skip')),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -287,7 +293,7 @@ class _TodayDoseCard extends StatelessWidget {
                       medication.withStatus(DateTime.now(), DoseStatus.taken),
                     ),
                     icon: const Icon(Icons.check_rounded),
-                    label: const Text('Taken'),
+                    label: Text(AppStrings.of(context).text('taken')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Appcolors.Primary,
                       foregroundColor: Appcolors.White,
@@ -300,7 +306,7 @@ class _TodayDoseCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Marked as ${status.label.toLowerCase()}',
+                '${AppStrings.of(context).text('markedAs')} ${AppStrings.of(context).doseStatus(status.name)}',
                 style: TextStyle(
                   color: statusColor,
                   fontWeight: FontWeight.w600,
@@ -352,14 +358,14 @@ class _MedicationTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${medication.type.label} • ${medication.dosage}',
+                  '${AppStrings.of(context).medicationType(medication.type.name)} • ${medication.dosage}',
                   style: const TextStyle(color: Appcolors.Grey2),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   medication.hasScheduledReminder
-                      ? '${medication.frequency.label} • ${medication.formattedTime}'
-                      : 'As needed — no automatic reminder',
+                      ? '${AppStrings.of(context).medicationFrequency(medication.frequency.name)} • ${medication.formattedTime}'
+                      : AppStrings.of(context).text('asNeededNoReminder'),
                   style: const TextStyle(
                     color: Appcolors.Primary,
                     fontSize: 12,
@@ -393,13 +399,13 @@ class _EmptyMedicationList extends StatelessWidget {
               color: Appcolors.Grey2,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No medications yet',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              AppStrings.of(context).text('noMedications'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Add a medication to see your reminders and daily doses here.',
+            Text(
+              AppStrings.of(context).text('addMedicationDescription'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Appcolors.Grey2),
             ),
@@ -407,7 +413,7 @@ class _EmptyMedicationList extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add),
-              label: const Text('Add your first medication'),
+              label: Text(AppStrings.of(context).text('addMedication')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Appcolors.Primary,
               ),
@@ -431,11 +437,11 @@ class _EmptyScheduleCard extends StatelessWidget {
         border: Border.all(color: Appcolors.Grey3),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Icon(Icons.event_available_outlined, color: Appcolors.Primary),
           SizedBox(width: 12),
-          Expanded(child: Text('No medications are scheduled for today.')),
+          Expanded(child: Text(AppStrings.of(context).text('noDosesToday'))),
         ],
       ),
     );

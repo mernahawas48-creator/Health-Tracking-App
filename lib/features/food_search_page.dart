@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/services/usda_food_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 enum _FoodFilter { all, generic, branded }
 
@@ -53,7 +54,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Could not load food data. Check your internet and API key.';
+          _error = AppStrings.of(context).text('foodLoadError');
         });
       }
     } finally {
@@ -63,13 +64,14 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
       appBar: AppBar(
         backgroundColor: Appcolors.White,
         foregroundColor: Appcolors.Black,
         elevation: 0,
-        title: const Text('Search food'),
+        title: Text(strings.text('searchFood')),
       ),
       body: Column(
         children: [
@@ -79,7 +81,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
               controller: _controller,
               onSubmitted: (_) => _search(),
               decoration: InputDecoration(
-                hintText: 'Search banana, chicken, rice...',
+                hintText: strings.text('searchFoodHint'),
                 prefixIcon: const Icon(Icons.search, color: Appcolors.Primary),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.arrow_forward),
@@ -106,11 +108,11 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _filterChip('All', _FoodFilter.all),
+          _filterChip(AppStrings.of(context).text('all'), _FoodFilter.all),
           const SizedBox(width: 8),
-          _filterChip('Generic', _FoodFilter.generic),
+          _filterChip(AppStrings.of(context).text('generic'), _FoodFilter.generic),
           const SizedBox(width: 8),
-          _filterChip('Branded', _FoodFilter.branded),
+          _filterChip(AppStrings.of(context).text('branded'), _FoodFilter.branded),
         ],
       ),
     );
@@ -139,17 +141,17 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
         ),
       );
     if (_foods.isEmpty)
-      return const Center(
+      return Center(
         child: Text(
-          'Search for a food to see nutrition data.',
-          style: TextStyle(color: Appcolors.Grey2),
+          AppStrings.of(context).text('searchFoodEmpty'),
+          style: const TextStyle(color: Appcolors.Grey2),
         ),
       );
     if (_filteredFoods.isEmpty)
-      return const Center(
+      return Center(
         child: Text(
-          'No foods match this filter.',
-          style: TextStyle(color: Appcolors.Grey2),
+          AppStrings.of(context).text('noFilteredFoods'),
+          style: const TextStyle(color: Appcolors.Grey2),
         ),
       );
 
@@ -287,7 +289,7 @@ class _AddFoodPageState extends State<_AddFoodPage> {
         backgroundColor: Appcolors.White,
         foregroundColor: Appcolors.Black,
         elevation: 0,
-        title: const Text('Add food'),
+        title: Text(AppStrings.of(context).text('addFood')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -305,13 +307,16 @@ class _AddFoodPageState extends State<_AddFoodPage> {
               ),
             const SizedBox(height: 8),
             Text(
-              '${calories.round()} kcal • Protein ${(widget.food.proteinPer100g * multiplier).round()}g',
+              AppStrings.of(context).nutritionSummary(
+                calories: calories.round(),
+                protein: (widget.food.proteinPer100g * multiplier).round(),
+              ),
               style: const TextStyle(color: Appcolors.Grey1),
             ),
             const SizedBox(height: 28),
-            const Text(
-              'Serving amount',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppStrings.of(context).text('servingAmount'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             Slider(
               value: _grams,
@@ -324,7 +329,7 @@ class _AddFoodPageState extends State<_AddFoodPage> {
             ),
             Center(
               child: Text(
-                '${_grams.round()} grams',
+                '${_grams.round()} ${AppStrings.of(context).text('grams')}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -332,14 +337,14 @@ class _AddFoodPageState extends State<_AddFoodPage> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text('Meal', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppStrings.of(context).text('meal'), style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: MealType.values
                   .map(
                     (meal) => ChoiceChip(
-                      label: Text(meal.label),
+                      label: Text(AppStrings.of(context).mealLabel(meal.name)),
                       selected: _meal == meal,
                       selectedColor: Appcolors.Primary,
                       labelStyle: TextStyle(
@@ -374,7 +379,7 @@ class _AddFoodPageState extends State<_AddFoodPage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('Add to today\'s meals'),
+                child: Text(AppStrings.of(context).text('addToMeals')),
               ),
             ),
           ],
