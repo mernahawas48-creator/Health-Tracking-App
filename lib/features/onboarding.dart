@@ -26,7 +26,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _finishOnboarding() async {
     final success = await context.read<SessionCubit>().completeOnboarding();
-    if (success && mounted) Navigator.pushReplacementNamed(context, '/signup');
+
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, '/signup');
+    }
   }
 
   @override
@@ -43,18 +46,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
               alignment: AlignmentDirectional.centerEnd,
               child: PopupMenuButton<String>(
                 onSelected: (code) => settingsController.update(
-                  settingsController.settings.copyWith(languageCode: code),
+                  settingsController.settings.copyWith(
+                    languageCode: code,
+                  ),
                 ),
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'en', child: Text('English')),
-                  PopupMenuItem(value: 'ar', child: Text('العربية')),
+                  PopupMenuItem(
+                    value: 'en',
+                    child: Text('English'),
+                  ),
+                  PopupMenuItem(
+                    value: 'ar',
+                    child: Text('العربية'),
+                  ),
                 ],
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.only(top: 12, end: 20),
+                  padding: const EdgeInsetsDirectional.only(
+                    top: 12,
+                    end: 20,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.language_rounded, color: Appcolors.Primary),
+                      Icon(
+                        Icons.language_rounded,
+                        color: Appcolors.Primary,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         strings.isArabic ? 'العربية' : 'English',
@@ -68,10 +85,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
               ),
             ),
+
             Expanded(
               child: PageView(
                 controller: _pageController,
-                onPageChanged: (index) => setState(() => _currentPage = index),
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                },
                 children: [
                   OnboardingView(
                     image: 'assets/images/onboarding1.png',
@@ -91,6 +111,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ],
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: Row(
@@ -106,7 +127,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                     ),
                   ),
+
                   const Spacer(),
+
                   Row(
                     children: List.generate(
                       3,
@@ -123,7 +146,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                     ),
                   ),
+
                   const Spacer(),
+
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Appcolors.Primary,
@@ -150,7 +175,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       _currentPage == 2
                           ? strings.text('getStarted')
                           : strings.text('next'),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
