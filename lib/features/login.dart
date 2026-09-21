@@ -3,6 +3,7 @@ import 'package:meditrack/features/authview.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/features/custom_text_form_field.dart';
 import 'package:meditrack/l10n/app_strings.dart';
+import 'package:meditrack/services/local_session_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,11 +13,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     return AuthLayout(
-      child: Column(
+      child: Form(key: _formKey, child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
@@ -112,8 +114,10 @@ class _LoginPageState extends State<LoginPage> {
                 borderRadius: BorderRadius.circular(15)
                )
               ),
-              onPressed: (){
-
+              onPressed: () async {
+                if (!(_formKey.currentState?.validate() ?? false)) return;
+                await LocalSessionService.signIn();
+                if (context.mounted) Navigator.pushReplacementNamed(context, '/home');
               }, 
               child: Text(
                 strings.text('login'),
@@ -185,6 +189,6 @@ class _LoginPageState extends State<LoginPage> {
 
               
         ]
-      ));
+      )));
   }
 }

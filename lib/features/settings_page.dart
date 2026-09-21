@@ -3,6 +3,7 @@ import 'package:meditrack/l10n/app_strings.dart';
 import 'package:meditrack/models/app_settings.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/services/medication_notification_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.controller});
@@ -55,25 +56,25 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              Text('Daily reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(settings.isArabic ? 'التذكيرات اليومية' : 'Daily reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               _SettingsCard(children: [
                 SwitchListTile(
                   secondary: const Icon(Icons.water_drop_outlined, color: Appcolors.Primary),
-                  title: const Text('Water reminder'),
-                  subtitle: Text('${settings.waterReminderHour.toString().padLeft(2, '0')}:00 daily'),
+                  title: Text(settings.isArabic ? 'تذكير الماء' : 'Water reminder'),
+                  subtitle: Text(settings.isArabic ? 'يوميًا ${settings.waterReminderHour.toString().padLeft(2, '0')}:00' : '${settings.waterReminderHour.toString().padLeft(2, '0')}:00 daily'),
                   value: settings.waterReminderEnabled,
                   activeThumbColor: Appcolors.Primary,
-                  onChanged: (value) => controller.update(settings.copyWith(waterReminderEnabled: value)),
+                  onChanged: (value) async { await controller.update(settings.copyWith(waterReminderEnabled: value)); await MedicationNotificationService.instance.setDailyWellnessReminder(id: MedicationNotificationService.waterReminderId,title:'Water reminder',body:'Time for a glass of water.',enabled:value,hour:settings.waterReminderHour); },
                 ),
                 const Divider(height: 1, indent: 68),
                 SwitchListTile(
                   secondary: const Icon(Icons.bedtime_outlined, color: Appcolors.Primary),
-                  title: const Text('Sleep reminder'),
-                  subtitle: Text('${settings.sleepReminderHour.toString().padLeft(2, '0')}:00 daily'),
+                  title: Text(settings.isArabic ? 'تذكير النوم' : 'Sleep reminder'),
+                  subtitle: Text(settings.isArabic ? 'يوميًا ${settings.sleepReminderHour.toString().padLeft(2, '0')}:00' : '${settings.sleepReminderHour.toString().padLeft(2, '0')}:00 daily'),
                   value: settings.sleepReminderEnabled,
                   activeThumbColor: Appcolors.Primary,
-                  onChanged: (value) => controller.update(settings.copyWith(sleepReminderEnabled: value)),
+                  onChanged: (value) async { await controller.update(settings.copyWith(sleepReminderEnabled: value)); await MedicationNotificationService.instance.setDailyWellnessReminder(id: MedicationNotificationService.sleepReminderId,title:'Sleep reminder',body:'Start your wind-down routine.',enabled:value,hour:settings.sleepReminderHour); },
                 ),
               ]),
               const SizedBox(height: 24),

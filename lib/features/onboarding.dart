@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditrack/features/onboarding_view.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
+import 'package:meditrack/services/local_session_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -21,8 +22,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     super.dispose();
   }
 
-  void _finishOnboarding() {
-    Navigator.pushReplacementNamed(context, '/signup');
+  Future<void> _finishOnboarding() async {
+    await LocalSessionService.completeOnboarding();
+    if (mounted) Navigator.pushReplacementNamed(context, '/signup');
   }
 
   @override

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:meditrack/features/settings_page.dart';
 import 'package:meditrack/features/reports_page.dart';
+import 'package:meditrack/features/help_page.dart';
+import 'package:meditrack/features/privacy_page.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
@@ -50,6 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await settingsController.update(
       settingsController.settings.copyWith(
         profileImagePath: result.profileImagePath,
+        displayName: result.name,
       ),
     );
   }
@@ -142,8 +145,8 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _SettingsTile(
                   icon: Icons.insights_outlined,
-                  title: 'Reports and streaks',
-                  subtitle: 'Your weekly health summary',
+                  title: settingsController.settings.isArabic ? 'التقارير والسلاسل' : 'Reports and streaks',
+                  subtitle: settingsController.settings.isArabic ? 'ملخص صحتك الأسبوعي' : 'Your weekly health summary',
                   onTap: () => Navigator.push<void>(context, MaterialPageRoute(builder: (_) => ReportsPage(medications: const [], settings: settingsController.settings))),
                 ),
                 _SettingsDivider(),
@@ -187,13 +190,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 _SettingsTile(
                   icon: Icons.help_outline_rounded,
                   title: strings.text('helpSupport'),
-                  onTap: () => _showComingSoon(strings.text('helpSupport')),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage())),
                 ),
                 _SettingsDivider(),
                 _SettingsTile(
                   icon: Icons.privacy_tip_outlined,
                   title: strings.text('privacy'),
-                  onTap: () => _showComingSoon(strings.text('privacy')),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPage())),
                 ),
               ],
             ),

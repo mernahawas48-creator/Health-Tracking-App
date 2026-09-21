@@ -43,7 +43,7 @@ class HealthApp extends StatelessWidget {
               ),
               useMaterial3: true,
             ),
-            initialRoute: '/home',
+            initialRoute: '/',
             routes: appRoutes,
           );
         },

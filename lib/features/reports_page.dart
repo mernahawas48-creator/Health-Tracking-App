@@ -15,19 +15,19 @@ class ReportsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xffF9F7FB),
-    appBar: AppBar(backgroundColor: Appcolors.White, foregroundColor: Appcolors.Black, title: const Text('Weekly report', style: TextStyle(fontWeight: FontWeight.bold))),
+    appBar: AppBar(backgroundColor: Appcolors.White, foregroundColor: Appcolors.Black, title: Text(settings.isArabic ? 'التقرير الأسبوعي' : 'Weekly report', style: const TextStyle(fontWeight: FontWeight.bold))),
     body: FutureBuilder<_ReportData>(
       future: _load(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
         final data = snapshot.data!;
         return ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('Your last 7 days', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          Text(settings.isArabic ? 'آخر 7 أيام' : 'Your last 7 days', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
           const SizedBox(height: 12),
-          _ReportCard(icon: Icons.water_drop_outlined, color: Colors.blue, title: 'Water', value: '${data.waterStreak} day streak', detail: 'Keep meeting your ${settings.waterGoalMl} ml goal.'),
-          _ReportCard(icon: Icons.bedtime_outlined, color: Colors.indigo, title: 'Sleep', value: '${data.sleepStreak} day streak', detail: 'Goal: ${settings.sleepGoalMinutes ~/ 60} hours each night.'),
-          _ReportCard(icon: Icons.medication_outlined, color: Appcolors.Primary, title: 'Medication', value: '${data.medicationRate}%', detail: 'Today: ${data.taken}/${data.scheduled} doses taken.'),
-          _ReportCard(icon: Icons.restaurant_outlined, color: Colors.orange, title: 'Nutrition', value: '${data.weekCalories} kcal', detail: 'Logged over the past 7 days. Daily goal: ${settings.dailyCalorieGoal} kcal.'),
+          _ReportCard(icon: Icons.water_drop_outlined, color: Colors.blue, title: settings.isArabic ? 'الماء' : 'Water', value: settings.isArabic ? 'سلسلة ${data.waterStreak} يوم' : '${data.waterStreak} day streak', detail: settings.isArabic ? 'استمر في تحقيق هدف ${settings.waterGoalMl} مل.' : 'Keep meeting your ${settings.waterGoalMl} ml goal.'),
+          _ReportCard(icon: Icons.bedtime_outlined, color: Colors.indigo, title: settings.isArabic ? 'النوم' : 'Sleep', value: settings.isArabic ? 'سلسلة ${data.sleepStreak} يوم' : '${data.sleepStreak} day streak', detail: settings.isArabic ? 'الهدف: ${settings.sleepGoalMinutes ~/ 60} ساعات كل ليلة.' : 'Goal: ${settings.sleepGoalMinutes ~/ 60} hours each night.'),
+          _ReportCard(icon: Icons.medication_outlined, color: Appcolors.Primary, title: settings.isArabic ? 'الأدوية' : 'Medication', value: '${data.medicationRate}%', detail: settings.isArabic ? 'اليوم: ${data.taken}/${data.scheduled} جرعات تم أخذها.' : 'Today: ${data.taken}/${data.scheduled} doses taken.'),
+          _ReportCard(icon: Icons.restaurant_outlined, color: Colors.orange, title: settings.isArabic ? 'التغذية' : 'Nutrition', value: '${data.weekCalories} kcal', detail: settings.isArabic ? 'تم تسجيلها خلال آخر 7 أيام. الهدف اليومي: ${settings.dailyCalorieGoal} kcal.' : 'Logged over the past 7 days. Daily goal: ${settings.dailyCalorieGoal} kcal.'),
         ]);
       },
     ),

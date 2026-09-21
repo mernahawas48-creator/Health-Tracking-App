@@ -17,6 +17,7 @@ class AppSettings {
     this.heightCm,
     this.weightKg,
     this.profileImagePath,
+    this.displayName = 'User Name',
     this.waterReminderEnabled = false,
     this.sleepReminderEnabled = false,
     this.waterReminderHour = 10,
@@ -36,6 +37,7 @@ class AppSettings {
   final double? heightCm;
   final double? weightKg;
   final String? profileImagePath;
+  final String displayName;
   final bool waterReminderEnabled;
   final bool sleepReminderEnabled;
   final int waterReminderHour;
@@ -57,6 +59,7 @@ class AppSettings {
     double? heightCm,
     double? weightKg,
     String? profileImagePath,
+    String? displayName,
     bool? waterReminderEnabled,
     bool? sleepReminderEnabled,
     int? waterReminderHour,
@@ -76,6 +79,7 @@ class AppSettings {
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
       profileImagePath: profileImagePath ?? this.profileImagePath,
+      displayName: displayName ?? this.displayName,
       waterReminderEnabled: waterReminderEnabled ?? this.waterReminderEnabled,
       sleepReminderEnabled: sleepReminderEnabled ?? this.sleepReminderEnabled,
       waterReminderHour: waterReminderHour ?? this.waterReminderHour,
@@ -97,6 +101,7 @@ class AppSettings {
     'heightCm': heightCm,
     'weightKg': weightKg,
     'profileImagePath': profileImagePath,
+    'displayName': displayName,
     'waterReminderEnabled': waterReminderEnabled,
     'sleepReminderEnabled': sleepReminderEnabled,
     'waterReminderHour': waterReminderHour,
@@ -127,6 +132,7 @@ class AppSettings {
     heightCm: (json['heightCm'] as num?)?.toDouble(),
     weightKg: (json['weightKg'] as num?)?.toDouble(),
     profileImagePath: json['profileImagePath'] as String?,
+    displayName: json['displayName'] as String? ?? 'User Name',
     waterReminderEnabled: json['waterReminderEnabled'] as bool? ?? false,
     sleepReminderEnabled: json['sleepReminderEnabled'] as bool? ?? false,
     waterReminderHour: (json['waterReminderHour'] as num?)?.toInt() ?? 10,

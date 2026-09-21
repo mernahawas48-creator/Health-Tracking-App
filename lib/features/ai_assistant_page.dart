@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/services/health_assistant_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
+import 'package:meditrack/l10n/app_strings.dart';
 
 class AiAssistantPage extends StatefulWidget {
   const AiAssistantPage({super.key});
@@ -16,6 +17,20 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   ];
   bool _waiting = false;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_messages.length == 1 && !_messages.first.user) {
+      final arabic = AppStrings.of(context).isArabic;
+      _messages[0] = _Message(
+        arabic
+            ? 'مرحبًا! يمكنني مساعدتك في العادات الصحية ومتابعة بيانات التطبيق.'
+            : 'Hi! I can help with healthy habits and app tracking.',
+        false,
+      );
+    }
+  }
+
   Future<void> _send() async {
     final question = _input.text.trim();
     if (question.isEmpty || _waiting) return;
@@ -24,7 +39,10 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       _waiting = true;
     });
     _input.clear();
-    final answer = await _assistant.reply(question);
+    final arabic = AppStrings.of(context).isArabic;
+    final answer = arabic
+        ? _arabicReply(question)
+        : await _assistant.reply(question);
     if (!mounted) return;
     setState(() {
       _messages.add(_Message(answer, false));
@@ -37,7 +55,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Health Assistant')),
+    appBar: AppBar(title: Text(AppStrings.of(context).isArabic ? 'المساعد الصحي' : 'Health Assistant')),
     body: Column(children: [
       Expanded(child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -59,12 +77,19 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       SafeArea(child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(children: [
-          Expanded(child: TextField(controller: _input, onSubmitted: (_) => _send(), decoration: const InputDecoration(hintText: 'Ask about water, sleep, medication…'))),
+          Expanded(child: TextField(controller: _input, onSubmitted: (_) => _send(), decoration: InputDecoration(hintText: AppStrings.of(context).isArabic ? 'اسأل عن الماء أو النوم أو الأدوية…' : 'Ask about water, sleep, medication…'))),
           IconButton(onPressed: _send, icon: const Icon(Icons.send, color: Appcolors.Primary)),
         ]),
       )),
     ]),
   );
+}
+
+String _arabicReply(String question) {
+  if (question.contains('ماء')) return 'اشرب رشفات صغيرة ومنتظمة، وسجّل كوبك التالي في متابعة الماء.';
+  if (question.contains('نوم')) return 'حاول تثبيت وقت النوم وابدأ روتينًا هادئًا قبل النوم.';
+  if (question.contains('دواء')) return 'استخدم جدول الدواء واتبع تعليمات الطبيب أو الصيدلي. لا أستطيع تقديم تشخيص طبي.';
+  return 'يمكنني مساعدتك في فهم بيانات التطبيق وبناء عادات صحية وتحضير أسئلة للطبيب.';
 }
 
 class _Message { const _Message(this.text, this.user); final String text; final bool user; }

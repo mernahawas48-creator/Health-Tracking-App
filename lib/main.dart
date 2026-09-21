@@ -12,5 +12,6 @@ Future<void> main() async {
     // The user can still use the app if a device temporarily rejects alerts.
   }
   final settingsController = await AppSettingsController.load();
+  await MedicationNotificationService.instance.restoreWellnessReminders(settingsController.settings);
   runApp(HealthApp(settingsController: settingsController));
 }
