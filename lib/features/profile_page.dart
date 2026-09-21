@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:meditrack/features/settings_page.dart';
+import 'package:meditrack/features/reports_page.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
@@ -139,6 +140,13 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 12),
             _SettingsGroup(
               children: [
+                _SettingsTile(
+                  icon: Icons.insights_outlined,
+                  title: 'Reports and streaks',
+                  subtitle: 'Your weekly health summary',
+                  onTap: () => Navigator.push<void>(context, MaterialPageRoute(builder: (_) => ReportsPage(medications: const [], settings: settingsController.settings))),
+                ),
+                _SettingsDivider(),
                 _SettingsTile(
                   icon: Icons.person_outline_rounded,
                   title: strings.text('personalDetails'),

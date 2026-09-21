@@ -17,6 +17,10 @@ class AppSettings {
     this.heightCm,
     this.weightKg,
     this.profileImagePath,
+    this.waterReminderEnabled = false,
+    this.sleepReminderEnabled = false,
+    this.waterReminderHour = 10,
+    this.sleepReminderHour = 21,
   });
 
   final int waterGoalMl;
@@ -32,6 +36,10 @@ class AppSettings {
   final double? heightCm;
   final double? weightKg;
   final String? profileImagePath;
+  final bool waterReminderEnabled;
+  final bool sleepReminderEnabled;
+  final int waterReminderHour;
+  final int sleepReminderHour;
 
   bool get isArabic => languageCode == 'ar';
 
@@ -49,6 +57,10 @@ class AppSettings {
     double? heightCm,
     double? weightKg,
     String? profileImagePath,
+    bool? waterReminderEnabled,
+    bool? sleepReminderEnabled,
+    int? waterReminderHour,
+    int? sleepReminderHour,
   }) {
     return AppSettings(
       waterGoalMl: waterGoalMl ?? this.waterGoalMl,
@@ -64,6 +76,10 @@ class AppSettings {
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
       profileImagePath: profileImagePath ?? this.profileImagePath,
+      waterReminderEnabled: waterReminderEnabled ?? this.waterReminderEnabled,
+      sleepReminderEnabled: sleepReminderEnabled ?? this.sleepReminderEnabled,
+      waterReminderHour: waterReminderHour ?? this.waterReminderHour,
+      sleepReminderHour: sleepReminderHour ?? this.sleepReminderHour,
     );
   }
 
@@ -81,6 +97,10 @@ class AppSettings {
     'heightCm': heightCm,
     'weightKg': weightKg,
     'profileImagePath': profileImagePath,
+    'waterReminderEnabled': waterReminderEnabled,
+    'sleepReminderEnabled': sleepReminderEnabled,
+    'waterReminderHour': waterReminderHour,
+    'sleepReminderHour': sleepReminderHour,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -107,6 +127,10 @@ class AppSettings {
     heightCm: (json['heightCm'] as num?)?.toDouble(),
     weightKg: (json['weightKg'] as num?)?.toDouble(),
     profileImagePath: json['profileImagePath'] as String?,
+    waterReminderEnabled: json['waterReminderEnabled'] as bool? ?? false,
+    sleepReminderEnabled: json['sleepReminderEnabled'] as bool? ?? false,
+    waterReminderHour: (json['waterReminderHour'] as num?)?.toInt() ?? 10,
+    sleepReminderHour: (json['sleepReminderHour'] as num?)?.toInt() ?? 21,
   );
 
   static T _enumOrDefault<T extends Enum>(

@@ -55,6 +55,28 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
+              Text('Daily reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              _SettingsCard(children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.water_drop_outlined, color: Appcolors.Primary),
+                  title: const Text('Water reminder'),
+                  subtitle: Text('${settings.waterReminderHour.toString().padLeft(2, '0')}:00 daily'),
+                  value: settings.waterReminderEnabled,
+                  activeThumbColor: Appcolors.Primary,
+                  onChanged: (value) => controller.update(settings.copyWith(waterReminderEnabled: value)),
+                ),
+                const Divider(height: 1, indent: 68),
+                SwitchListTile(
+                  secondary: const Icon(Icons.bedtime_outlined, color: Appcolors.Primary),
+                  title: const Text('Sleep reminder'),
+                  subtitle: Text('${settings.sleepReminderHour.toString().padLeft(2, '0')}:00 daily'),
+                  value: settings.sleepReminderEnabled,
+                  activeThumbColor: Appcolors.Primary,
+                  onChanged: (value) => controller.update(settings.copyWith(sleepReminderEnabled: value)),
+                ),
+              ]),
+              const SizedBox(height: 24),
               Text(
                 s.text('appearanceLanguage'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

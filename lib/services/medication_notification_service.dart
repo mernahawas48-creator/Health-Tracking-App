@@ -34,12 +34,20 @@ class MedicationNotificationService {
       const NotificationDetails(
         android: AndroidNotificationDetails('medication_reminders', 'Medication reminders', channelDescription: 'Scheduled reminders for medication doses', importance: Importance.high, priority: Priority.high),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      // Exact alarms can be denied by Android/emulators. An inexact reminder
+      // still delivers reliably without making medication saving fail.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: medication.frequency == MedicationFrequency.daily
           ? DateTimeComponents.time
           : null,
     );
   }
 
-  Future<void> cancel(Medication medication) => _plugin.cancel(_notificationId(medication));
+  Future<void> cancel(Medication medication) async {
+    try {
+      await _plugin.cancel(_notificationId(medication));
+    } catch (_) {
+      // Local medication data must remain usable if notifications are unavailable.
+    }
+  }
 }

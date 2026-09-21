@@ -24,12 +24,16 @@ class MedicationAdherenceSummary {
 class MedicationAdherenceService {
   static MedicationAdherenceSummary summaryForToday(
     List<Medication> medications,
+  ) => summaryForDate(medications, DateTime.now());
+
+  static MedicationAdherenceSummary summaryForDate(
+    List<Medication> medications,
+    DateTime date,
   ) {
-    final now = DateTime.now();
     final scheduled = medications
-        .where((medication) => medication.isScheduledFor(now))
+        .where((medication) => medication.isScheduledFor(date))
         .toList();
-    final statuses = scheduled.map((medication) => medication.statusOn(now));
+    final statuses = scheduled.map((medication) => medication.statusOn(date));
 
     return MedicationAdherenceSummary(
       scheduledCount: scheduled.length,

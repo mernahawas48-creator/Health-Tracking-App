@@ -11,6 +11,7 @@ import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
 import 'package:meditrack/services/medication_repository.dart';
 import 'package:meditrack/services/medication_notification_service.dart';
+import 'package:meditrack/features/ai_assistant_page.dart';
 import 'package:meditrack/services/nutrition_repository.dart';
 import 'package:meditrack/services/sleep_repository.dart';
 import 'package:meditrack/services/water_repository.dart';
@@ -71,7 +72,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> _saveMedications() async {
     await _medicationRepository.save(_medications);
     for (final medication in _medications) {
-      await MedicationNotificationService.instance.sync(medication);
+      try {
+        await MedicationNotificationService.instance.sync(medication);
+      } catch (_) {
+        // The medication is already saved; Android alerts can be retried later.
+      }
     }
   }
 
@@ -274,7 +279,7 @@ class _HomePageState extends State<HomePage> {
               heroTag: 'aiAssistant',
               backgroundColor: Appcolors.White,
               shape: const CircleBorder(),
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiAssistantPage())),
               child: const Text('🤖', style: TextStyle(fontSize: 27)),
             ),
           ),
@@ -368,7 +373,20 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              onPressed: () {},
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                builder: (sheetContext) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.notifications_active_outlined, color: Appcolors.SecondaryOrange, size: 36),
+                    const SizedBox(height: 12),
+                    const Text('Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text(_upcoming == null ? 'No upcoming medication reminders.' : '${_upcoming!.name} is due at ${_upcoming!.formattedTime}.'),
+                    const SizedBox(height: 16),
+                  ]),
+                ),
+              ),
               icon: const Icon(
                 Icons.notifications_none,
                 color: Appcolors.White,

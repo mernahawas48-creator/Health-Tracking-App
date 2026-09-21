@@ -7,15 +7,19 @@ class NutritionRepository {
   static const _storageKey = 'nutrition_logs_v1';
 
   Future<List<FoodLog>> loadToday() async {
+    return loadForDate(DateTime.now());
+  }
+
+  /// Keeps the complete on-device history; screens can later request any day.
+  Future<List<FoodLog>> loadForDate(DateTime date) async {
     final preferences = await SharedPreferences.getInstance();
     final values = preferences.getStringList(_storageKey) ?? [];
-    final today = DateTime.now();
     final logs = <FoodLog>[];
 
     for (final value in values) {
       try {
         final log = FoodLog.fromJson(jsonDecode(value) as Map<String, dynamic>);
-        if (_isSameDay(log.loggedAt, today)) logs.add(log);
+        if (_isSameDay(log.loggedAt, date)) logs.add(log);
       } on FormatException {
         // Ignore a malformed local record instead of blocking Nutrition.
       }
@@ -25,9 +29,19 @@ class NutritionRepository {
 
   Future<void> saveToday(List<FoodLog> logs) async {
     final preferences = await SharedPreferences.getInstance();
+    final current = preferences.getStringList(_storageKey) ?? [];
+    final otherDays = <String>[];
+    for (final value in current) {
+      try {
+        final log = FoodLog.fromJson(jsonDecode(value) as Map<String, dynamic>);
+        if (!_isSameDay(log.loggedAt, DateTime.now())) otherDays.add(value);
+      } on FormatException {
+        // Drop malformed records while preserving valid history.
+      }
+    }
     await preferences.setStringList(
       _storageKey,
-      logs.map((log) => jsonEncode(log.toJson())).toList(),
+      [...otherDays, ...logs.map((log) => jsonEncode(log.toJson()))],
     );
   }
 
