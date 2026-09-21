@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'app/app.dart';
+import 'package:meditrack/app/app.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
 
-void main(){
-  runApp(HealthApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final settingsController = await AppSettingsController.load();
+  runApp(HealthApp(settingsController: settingsController));
 }

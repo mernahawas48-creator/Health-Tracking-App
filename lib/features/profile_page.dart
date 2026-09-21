@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:meditrack/features/settings_page.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -51,6 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsController = AppSettingsScope.of(context);
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
       appBar: AppBar(
@@ -75,7 +78,16 @@ class _ProfilePageState extends State<ProfilePage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _HealthPlanCard(goal: _healthGoal),
+            AnimatedBuilder(
+              animation: settingsController,
+              builder: (context, _) => _HealthPlanCard(
+                goal: _healthGoal,
+                waterGoalMl: settingsController.settings.waterGoalMl,
+                sleepGoalMinutes: settingsController.settings.sleepGoalMinutes,
+                activeCaloriesGoal:
+                    settingsController.settings.activeCaloriesGoal,
+              ),
+            ),
             const SizedBox(height: 24),
             const Text(
               'Preferences',
@@ -99,10 +111,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 _SettingsDivider(),
                 _SettingsTile(
-                  icon: Icons.straighten_rounded,
-                  title: 'Units',
-                  subtitle: 'Metric (ml, kg, km)',
-                  onTap: () => _showComingSoon('Unit preferences'),
+                  icon: Icons.settings_outlined,
+                  title: 'App settings',
+                  subtitle: 'Goals, theme, language and units',
+                  onTap: () => Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SettingsPage(controller: settingsController),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -218,9 +236,17 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _HealthPlanCard extends StatelessWidget {
-  const _HealthPlanCard({required this.goal});
+  const _HealthPlanCard({
+    required this.goal,
+    required this.waterGoalMl,
+    required this.sleepGoalMinutes,
+    required this.activeCaloriesGoal,
+  });
 
   final String goal;
+  final int waterGoalMl;
+  final int sleepGoalMinutes;
+  final int activeCaloriesGoal;
 
   @override
   Widget build(BuildContext context) {
@@ -269,16 +295,25 @@ class _HealthPlanCard extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Divider(height: 1),
           ),
-          const Row(
+          Row(
             children: [
               Expanded(
-                child: _GoalValue(value: '2 L', label: 'Water goal'),
+                child: _GoalValue(
+                  value: '${waterGoalMl / 1000} L',
+                  label: 'Water goal',
+                ),
               ),
               Expanded(
-                child: _GoalValue(value: '8 h', label: 'Sleep goal'),
+                child: _GoalValue(
+                  value: '${sleepGoalMinutes / 60} h',
+                  label: 'Sleep goal',
+                ),
               ),
               Expanded(
-                child: _GoalValue(value: '300', label: 'Activity kcal'),
+                child: _GoalValue(
+                  value: '$activeCaloriesGoal',
+                  label: 'Active kcal',
+                ),
               ),
             ],
           ),
