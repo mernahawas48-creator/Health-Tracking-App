@@ -11,6 +11,12 @@ class AppSettings {
     this.unit = MeasurementUnit.metric,
     this.theme = AppThemePreference.system,
     this.languageCode = 'en',
+    this.healthGoals = const [],
+    this.age,
+    this.gender,
+    this.heightCm,
+    this.weightKg,
+    this.profileImagePath,
   });
 
   final int waterGoalMl;
@@ -20,6 +26,12 @@ class AppSettings {
   final MeasurementUnit unit;
   final AppThemePreference theme;
   final String languageCode;
+  final List<String> healthGoals;
+  final int? age;
+  final String? gender;
+  final double? heightCm;
+  final double? weightKg;
+  final String? profileImagePath;
 
   bool get isArabic => languageCode == 'ar';
 
@@ -31,6 +43,12 @@ class AppSettings {
     MeasurementUnit? unit,
     AppThemePreference? theme,
     String? languageCode,
+    List<String>? healthGoals,
+    int? age,
+    String? gender,
+    double? heightCm,
+    double? weightKg,
+    String? profileImagePath,
   }) {
     return AppSettings(
       waterGoalMl: waterGoalMl ?? this.waterGoalMl,
@@ -40,6 +58,12 @@ class AppSettings {
       unit: unit ?? this.unit,
       theme: theme ?? this.theme,
       languageCode: languageCode ?? this.languageCode,
+      healthGoals: healthGoals ?? this.healthGoals,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      heightCm: heightCm ?? this.heightCm,
+      weightKg: weightKg ?? this.weightKg,
+      profileImagePath: profileImagePath ?? this.profileImagePath,
     );
   }
 
@@ -51,6 +75,12 @@ class AppSettings {
     'unit': unit.name,
     'theme': theme.name,
     'languageCode': languageCode,
+    'healthGoals': healthGoals,
+    'age': age,
+    'gender': gender,
+    'heightCm': heightCm,
+    'weightKg': weightKg,
+    'profileImagePath': profileImagePath,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -69,6 +99,14 @@ class AppSettings {
       AppThemePreference.system,
     ),
     languageCode: json['languageCode'] == 'ar' ? 'ar' : 'en',
+    healthGoals: (json['healthGoals'] as List? ?? const [])
+        .whereType<String>()
+        .toList(),
+    age: (json['age'] as num?)?.toInt(),
+    gender: json['gender'] as String?,
+    heightCm: (json['heightCm'] as num?)?.toDouble(),
+    weightKg: (json['weightKg'] as num?)?.toDouble(),
+    profileImagePath: json['profileImagePath'] as String?,
   );
 
   static T _enumOrDefault<T extends Enum>(

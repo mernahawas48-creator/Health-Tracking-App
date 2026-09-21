@@ -175,16 +175,26 @@ class Medication {
     return copyWith(doseStatuses: updatedStatuses);
   }
 
-  Medication copyWith({bool? isActive, Map<String, DoseStatus>? doseStatuses}) {
+  Medication copyWith({
+    String? name,
+    MedicationType? type,
+    String? dosage,
+    MedicationFrequency? frequency,
+    DateTime? startDate,
+    TimeOfDay? time,
+    MealRelation? mealRelation,
+    bool? isActive,
+    Map<String, DoseStatus>? doseStatuses,
+  }) {
     return Medication(
       id: id,
-      name: name,
-      type: type,
-      dosage: dosage,
-      frequency: frequency,
-      startDate: startDate,
-      time: time,
-      mealRelation: mealRelation,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      dosage: dosage ?? this.dosage,
+      frequency: frequency ?? this.frequency,
+      startDate: startDate ?? this.startDate,
+      time: time ?? this.time,
+      mealRelation: mealRelation ?? this.mealRelation,
       isActive: isActive ?? this.isActive,
       doseStatuses: doseStatuses ?? this.doseStatuses,
     );

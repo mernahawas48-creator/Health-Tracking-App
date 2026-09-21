@@ -9,10 +9,12 @@ class NutritionPage extends StatefulWidget {
   const NutritionPage({
     super.key,
     required this.foodLogs,
-    this.calorieGoal = 1800,
+    required this.calorieGoal,
+    required this.onLogsChanged,
   });
   final List<FoodLog> foodLogs;
   final int calorieGoal;
+  final Future<void> Function(List<FoodLog> logs) onLogsChanged;
   @override
   State<NutritionPage> createState() => _NutritionPageState();
 }
@@ -23,7 +25,9 @@ class _NutritionPageState extends State<NutritionPage> {
       context,
       MaterialPageRoute(builder: (_) => const FoodSearchPage()),
     );
-    if (log != null) setState(() => widget.foodLogs.add(log));
+    if (log == null) return;
+    setState(() => widget.foodLogs.add(log));
+    await widget.onLogsChanged(widget.foodLogs);
   }
 
   Future<void> _openMealIdeas() async {
@@ -33,7 +37,9 @@ class _NutritionPageState extends State<NutritionPage> {
         builder: (_) => MealIdeasPage(remainingCalories: _remaining),
       ),
     );
-    if (log != null) setState(() => widget.foodLogs.add(log));
+    if (log == null) return;
+    setState(() => widget.foodLogs.add(log));
+    await widget.onLogsChanged(widget.foodLogs);
   }
 
   double get _consumed =>

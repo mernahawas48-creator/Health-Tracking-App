@@ -10,6 +10,11 @@ import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
 import 'package:meditrack/services/medication_repository.dart';
+import 'package:meditrack/services/medication_notification_service.dart';
+import 'package:meditrack/services/nutrition_repository.dart';
+import 'package:meditrack/services/sleep_repository.dart';
+import 'package:meditrack/services/water_repository.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 
@@ -23,12 +28,13 @@ class _HomePageState extends State<HomePage> {
   int selectedIndex = 0;
   final List<Medication> _medications = [];
   final MedicationRepository _medicationRepository = MedicationRepository();
-  bool _isLoadingMedications = true;
+  final NutritionRepository _nutritionRepository = NutritionRepository();
+  final SleepRepository _sleepRepository = SleepRepository();
+  final WaterRepository _waterRepository = WaterRepository();
+  bool _isLoadingDashboard = true;
   final List<FoodLog> _foodLogs = [];
-  static const int _waterGoalMl = 2000;
   int _waterMl = 0;
   int _waterStreak = 0;
-  static const int _sleepGoalMinutes = 8 * 60;
   int _sleepMinutes = 0;
   int _sleepStreak = 0;
   String _userName = 'User Name';
@@ -36,22 +42,38 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadStreaks();
-    _loadMedications();
+    _loadDashboardData();
   }
 
-  Future<void> _loadMedications() async {
+  Future<void> _loadDashboardData() async {
     final medications = await _medicationRepository.load();
+    final waterMl = await _waterRepository.loadToday();
+    final sleepMinutes = await _sleepRepository.loadToday();
+    final foodLogs = await _nutritionRepository.loadToday();
+    final waterStreak = await HabitStreakService.currentStreak(HabitType.water);
+    final sleepStreak = await HabitStreakService.currentStreak(HabitType.sleep);
     if (!mounted) return;
     setState(() {
       _medications
         ..clear()
         ..addAll(medications);
-      _isLoadingMedications = false;
+      _foodLogs
+        ..clear()
+        ..addAll(foodLogs);
+      _waterMl = waterMl;
+      _sleepMinutes = sleepMinutes;
+      _waterStreak = waterStreak;
+      _sleepStreak = sleepStreak;
+      _isLoadingDashboard = false;
     });
   }
 
-  Future<void> _saveMedications() => _medicationRepository.save(_medications);
+  Future<void> _saveMedications() async {
+    await _medicationRepository.save(_medications);
+    for (final medication in _medications) {
+      await MedicationNotificationService.instance.sync(medication);
+    }
+  }
 
   Future<void> _loadStreaks() async {
     final waterStreak = await HabitStreakService.currentStreak(HabitType.water);
@@ -107,6 +129,12 @@ class _HomePageState extends State<HomePage> {
     await _saveMedications();
   }
 
+  Future<void> _deleteMedication(Medication medication) async {
+    setState(() => _medications.removeWhere((item) => item.id == medication.id));
+    await MedicationNotificationService.instance.cancel(medication);
+    await _saveMedications();
+  }
+
   Future<void> _openMedications() async {
     await Navigator.push<void>(
       context,
@@ -115,6 +143,7 @@ class _HomePageState extends State<HomePage> {
           medications: _medications,
           onMedicationAdded: _addMedicationFromList,
           onMedicationChanged: _updateMedication,
+          onMedicationDeleted: _deleteMedication,
         ),
       ),
     );
@@ -122,11 +151,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openNutrition() async {
+    final settings = AppSettingsScope.of(context).settings;
     await Navigator.push<void>(
       context,
-      MaterialPageRoute(builder: (_) => NutritionPage(foodLogs: _foodLogs)),
+      MaterialPageRoute(
+        builder: (_) => NutritionPage(
+          foodLogs: _foodLogs,
+          calorieGoal: settings.dailyCalorieGoal,
+          onLogsChanged: _nutritionRepository.saveToday,
+        ),
+      ),
     );
-    if (mounted) setState(() {});
+    await _loadDashboardData();
   }
 
   Future<void> _openProfile() async {
@@ -144,31 +180,38 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openWaterTracker() async {
+    final settings = AppSettingsScope.of(context).settings;
     final waterMl = await Navigator.push<int>(
       context,
       MaterialPageRoute(
         builder: (_) =>
-            WaterTrackerPage(initialWaterMl: _waterMl, goalMl: _waterGoalMl),
+            WaterTrackerPage(
+              initialWaterMl: _waterMl,
+              goalMl: settings.waterGoalMl,
+            ),
       ),
     );
     if (waterMl != null && mounted) {
       setState(() => _waterMl = waterMl);
+      await _waterRepository.saveToday(waterMl);
       _loadStreaks();
     }
   }
 
   Future<void> _openSleepTracker() async {
+    final settings = AppSettingsScope.of(context).settings;
     final sleepMinutes = await Navigator.push<int>(
       context,
       MaterialPageRoute(
         builder: (_) => SleepTrackerPage(
           initialSleepMinutes: _sleepMinutes,
-          goalMinutes: _sleepGoalMinutes,
+          goalMinutes: settings.sleepGoalMinutes,
         ),
       ),
     );
     if (sleepMinutes != null && mounted) {
       setState(() => _sleepMinutes = sleepMinutes);
+      await _sleepRepository.saveToday(sleepMinutes);
       _loadStreaks();
     }
   }
@@ -184,12 +227,13 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    final settings = AppSettingsScope.of(context).settings;
     return Scaffold(
       backgroundColor: const Color(0xffF9F7FB),
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: _isLoadingMedications
+            child: _isLoadingDashboard
                 ? const Padding(
                     padding: EdgeInsets.only(top: 90),
                     child: CircularProgressIndicator(color: Appcolors.Primary),
@@ -205,9 +249,14 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               _upcomingCard(),
                               const SizedBox(height: 20),
-                              _activityCard(),
+                              _activityCard(settings.activeCaloriesGoal),
                               const SizedBox(height: 20),
-                              _waterSleep(),
+                              _waterSleep(
+                                waterGoalMl: settings.waterGoalMl,
+                                sleepGoalMinutes: settings.sleepGoalMinutes,
+                              ),
+                              const SizedBox(height: 20),
+                              _nutritionSummaryCard(settings.dailyCalorieGoal),
                               const SizedBox(height: 20),
                               _todayCard(),
                               const SizedBox(height: 100),
@@ -411,7 +460,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _activityCard() => _card(
+  Widget _activityCard(int activeCaloriesGoal) => _card(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -430,7 +479,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(AppStrings.of(context).text('burnedCalories'), style: const TextStyle(fontSize: 15)),
-            const Text('0 / 300 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('0 / $activeCaloriesGoal kcal', style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         SizedBox(height: 10),
@@ -463,14 +512,17 @@ class _HomePageState extends State<HomePage> {
     ),
   );
 
-  Widget _waterSleep() => Row(
+  Widget _waterSleep({
+    required int waterGoalMl,
+    required int sleepGoalMinutes,
+  }) => Row(
     children: [
       Expanded(
         child: _smallCard(
           icon: Icons.water_drop_outlined,
           iconColor: Colors.blue,
           title: AppStrings.of(context).text('water'),
-          value: '$_waterMl / $_waterGoalMl ml\n${AppStrings.of(context).dayStreak(_waterStreak)}',
+          value: '$_waterMl / $waterGoalMl ml\n${AppStrings.of(context).dayStreak(_waterStreak)}',
           onTap: _openWaterTracker,
         ),
       ),
@@ -482,7 +534,7 @@ class _HomePageState extends State<HomePage> {
           title: AppStrings.of(context).text('sleep'),
           value: _sleepMinutes == 0
               ? '${AppStrings.of(context).text('noSleepLogged')}\n${AppStrings.of(context).dayStreak(_sleepStreak)}'
-              : '${_formatDuration(_sleepMinutes)} / ${_formatDuration(_sleepGoalMinutes)}\n${AppStrings.of(context).dayStreak(_sleepStreak)}',
+              : '${_formatDuration(_sleepMinutes)} / ${_formatDuration(sleepGoalMinutes)}\n${AppStrings.of(context).dayStreak(_sleepStreak)}',
           onTap: _openSleepTracker,
         ),
       ),
@@ -520,6 +572,50 @@ class _HomePageState extends State<HomePage> {
       ),
     ),
   );
+
+  Widget _nutritionSummaryCard(int calorieGoal) {
+    final consumed = _foodLogs.fold<double>(
+      0,
+      (total, log) => total + log.calories,
+    );
+    final progress = (consumed / calorieGoal).clamp(0.0, 1.0);
+    return InkWell(
+      onTap: _openNutrition,
+      borderRadius: BorderRadius.circular(20),
+      child: _card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.restaurant_outlined, color: Appcolors.Primary),
+                const SizedBox(width: 8),
+                Text(
+                  AppStrings.of(context).text('nutrition'),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Text(
+                  '${consumed.round()} / $calorieGoal kcal',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                color: Appcolors.Primary,
+                backgroundColor: const Color(0xffDDF4F5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _todayCard() => _card(
     child: Column(

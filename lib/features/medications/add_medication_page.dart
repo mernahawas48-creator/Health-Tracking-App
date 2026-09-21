@@ -4,7 +4,8 @@ import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 
 class AddMedicationPage extends StatefulWidget {
-  const AddMedicationPage({super.key});
+  const AddMedicationPage({super.key, this.medication});
+  final Medication? medication;
 
   @override
   State<AddMedicationPage> createState() => _AddMedicationPageState();
@@ -12,13 +13,28 @@ class AddMedicationPage extends StatefulWidget {
 
 class _AddMedicationPageState extends State<AddMedicationPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _dosageController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _dosageController;
   DateTime _startDate = DateTime.now();
   TimeOfDay _time = TimeOfDay.now();
   MedicationFrequency _frequency = MedicationFrequency.daily;
   MedicationType _type = MedicationType.tablet;
   MealRelation _mealRelation = MealRelation.afterMeal;
+
+  @override
+  void initState() {
+    super.initState();
+    final medication = widget.medication;
+    _nameController = TextEditingController(text: medication?.name ?? '');
+    _dosageController = TextEditingController(text: medication?.dosage ?? '');
+    if (medication != null) {
+      _startDate = medication.startDate;
+      _time = medication.time;
+      _frequency = medication.frequency;
+      _type = medication.type;
+      _mealRelation = medication.mealRelation;
+    }
+  }
 
   @override
   void dispose() {
@@ -47,7 +63,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
     Navigator.pop(
       context,
       Medication(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        id: widget.medication?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         type: _type,
         dosage: _dosageController.text.trim(),
@@ -55,6 +71,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
         startDate: _startDate,
         time: _time,
         mealRelation: _mealRelation,
+        doseStatuses: widget.medication?.doseStatuses ?? const {},
       ),
     );
   }
@@ -70,7 +87,9 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          strings.text('addMedicationTitle'),
+          widget.medication == null
+              ? strings.text('addMedicationTitle')
+              : strings.text('editMedication'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),

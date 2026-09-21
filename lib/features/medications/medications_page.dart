@@ -11,11 +11,13 @@ class MedicationsPage extends StatefulWidget {
     required this.medications,
     required this.onMedicationAdded,
     required this.onMedicationChanged,
+    required this.onMedicationDeleted,
   });
 
   final List<Medication> medications;
   final ValueChanged<Medication> onMedicationAdded;
   final ValueChanged<Medication> onMedicationChanged;
+  final ValueChanged<Medication> onMedicationDeleted;
 
   @override
   State<MedicationsPage> createState() => _MedicationsPageState();
@@ -35,6 +37,17 @@ class _MedicationsPageState extends State<MedicationsPage> {
   void _updateMedication(Medication medication) {
     widget.onMedicationChanged(medication);
     setState(() {});
+  }
+
+  Future<void> _editMedication(Medication medication) async {
+    final updated = await Navigator.push<Medication>(context, MaterialPageRoute(builder: (_) => AddMedicationPage(medication: medication)));
+    if (updated != null && mounted) _updateMedication(updated);
+  }
+
+  Future<void> _deleteMedication(Medication medication) async {
+    final strings = AppStrings.of(context);
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(title: Text(strings.text('deleteMedication')), content: Text(strings.text('deleteMedicationMessage')), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(strings.text('cancel'))), TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(strings.text('delete'), style: const TextStyle(color: Colors.red)))]));
+    if (confirmed == true && mounted) { widget.onMedicationDeleted(medication); setState(() {}); }
   }
 
   @override
@@ -85,7 +98,7 @@ class _MedicationsPageState extends State<MedicationsPage> {
                 ...widget.medications.map(
                   (medication) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _MedicationTile(medication: medication),
+                    child: _MedicationTile(medication: medication, onEdit: () => _editMedication(medication), onDelete: () => _deleteMedication(medication)),
                   ),
                 ),
               ],
@@ -320,8 +333,10 @@ class _TodayDoseCard extends StatelessWidget {
 }
 
 class _MedicationTile extends StatelessWidget {
-  const _MedicationTile({required this.medication});
+  const _MedicationTile({required this.medication, required this.onEdit, required this.onDelete});
   final Medication medication;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -374,6 +389,13 @@ class _MedicationTile extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'edit', child: Text(AppStrings.of(context).text('editMedication'))),
+              PopupMenuItem(value: 'delete', child: Text(AppStrings.of(context).text('deleteMedication'))),
+            ],
           ),
         ],
       ),

@@ -65,6 +65,30 @@ class NutritionFood {
     return details;
   }
 
+  Map<String, dynamic> toJson() => {
+    'fdcId': fdcId,
+    'name': name,
+    'caloriesPer100g': caloriesPer100g,
+    'proteinPer100g': proteinPer100g,
+    'carbsPer100g': carbsPer100g,
+    'fatPer100g': fatPer100g,
+    'brandName': brandName,
+    'dataType': dataType,
+    'description': description,
+  };
+
+  factory NutritionFood.fromJson(Map<String, dynamic> json) => NutritionFood(
+    fdcId: (json['fdcId'] as num).toInt(),
+    name: json['name'] as String,
+    caloriesPer100g: (json['caloriesPer100g'] as num).toDouble(),
+    proteinPer100g: (json['proteinPer100g'] as num).toDouble(),
+    carbsPer100g: (json['carbsPer100g'] as num).toDouble(),
+    fatPer100g: (json['fatPer100g'] as num).toDouble(),
+    brandName: json['brandName'] as String?,
+    dataType: json['dataType'] as String?,
+    description: json['description'] as String?,
+  );
+
   factory NutritionFood.fromUsdaJson(Map<String, dynamic> json) {
     final nutrients = (json['foodNutrients'] as List? ?? []);
 
@@ -117,4 +141,20 @@ class FoodLog {
   double get protein => food.proteinPer100g * multiplier;
   double get carbs => food.carbsPer100g * multiplier;
   double get fat => food.fatPer100g * multiplier;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'food': food.toJson(),
+    'amountGrams': amountGrams,
+    'mealType': mealType.name,
+    'loggedAt': loggedAt.toIso8601String(),
+  };
+
+  factory FoodLog.fromJson(Map<String, dynamic> json) => FoodLog(
+    id: json['id'] as String,
+    food: NutritionFood.fromJson(json['food'] as Map<String, dynamic>),
+    amountGrams: (json['amountGrams'] as num).toDouble(),
+    mealType: MealType.values.byName(json['mealType'] as String),
+    loggedAt: DateTime.parse(json['loggedAt'] as String),
+  );
 }
