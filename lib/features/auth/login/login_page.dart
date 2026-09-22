@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
@@ -9,7 +8,6 @@ import 'package:meditrack/core/utils/validators.dart';
 import 'package:meditrack/core/widgets/custom_text_form_field.dart';
 
 import 'package:meditrack/features/auth/widgets/authview.dart';
-import 'package:meditrack/features/auth/session_cubit.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class LoginPage extends StatefulWidget {
@@ -20,26 +18,17 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  Future<void> _continueAfterVerification() async {
-    final configured = await context.read<SessionCubit>().prepareAccount();
-    if (!mounted) return;
-    if (configured == null) throw StateError('No Firebase account.');
-    if (!configured) {
-      Navigator.pushReplacementNamed(context, '/profileview');
-      return;
-    }
-    final signedIn = await context.read<SessionCubit>().signIn();
-    if (!mounted) return;
-    if (signedIn) {
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-    } else {
-      _showErrorDialog(title: 'Login Error', message: 'Please try again.');
-    }
-  }
+  // ==========================================================
+  // SERVICES
+  // ==========================================================
 
   final AuthService _authService = getIt.isRegistered<AuthService>()
       ? getIt<AuthService>()
       : AuthService();
+
+  // ==========================================================
+  // CONTROLLERS
+  // ==========================================================
 
   final TextEditingController emailController = TextEditingController();
 
@@ -49,22 +38,9 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _isLoading = false;
 
-  Future<void> _signInWithGoogle() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-    try {
-      await _authService.signInWithGoogle();
-      if (mounted) await _continueAfterVerification();
-    } catch (_) {
-      if (mounted)
-        _showErrorDialog(
-          title: 'Google sign in failed',
-          message: 'Please try again.',
-        );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  // ==========================================================
+  // DISPOSE
+  // ==========================================================
 
   @override
   void dispose() {
@@ -93,83 +69,55 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final email = emailController.text.trim();
-
       final password = passwordController.text;
 
+      // Firebase checks:
+      // 1. The email belongs to an existing account.
+      // 2. The password matches that account.
       await _authService.login(email: email, password: password);
 
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Check email verification
-
-      final verified = await _authService.isEmailVerified();
-
-      if (!mounted) return;
-
-      if (!verified) {
-        _showVerificationDialog();
-
-        return;
-      }
-
-      await _continueAfterVerification();
+      // Successful authentication -> Home
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
 
       _handleLoginError(e);
     } catch (e) {
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
       _showErrorDialog(
-        title: 'Something went wrong',
+        title: 'Login Failed',
         message:
-            'We could not log you in.\n\n'
-            'Please try again later.',
+            'Something went wrong.\n\n'
+            'Please try again.',
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   // ==========================================================
-  // LOGIN ERROR
+  // LOGIN ERRORS
   // ==========================================================
 
   void _handleLoginError(FirebaseAuthException e) {
     switch (e.code) {
-      case 'user-not-found':
-        _showNoAccountDialog();
-
-        break;
-
-      case 'wrong-password':
-        _showErrorDialog(
-          title: 'Incorrect Password',
-          message:
-              'The password you entered is incorrect.\n\n'
-              'Please try again.',
-        );
-
-        break;
-
       case 'invalid-credential':
+      case 'user-not-found':
+      case 'wrong-password':
         _showErrorDialog(
           title: 'Incorrect Email or Password',
           message:
               'The email or password you entered is incorrect.\n\n'
-              'Please check your information and try again.',
+              'Make sure you signed up first and entered '
+              'the correct password.',
         );
-
         break;
 
       case 'invalid-email':
@@ -177,7 +125,13 @@ class _LoginPageState extends State<LoginPage> {
           title: 'Invalid Email',
           message: 'Please enter a valid email address.',
         );
+        break;
 
+      case 'user-disabled':
+        _showErrorDialog(
+          title: 'Account Disabled',
+          message: 'This account has been disabled.',
+        );
         break;
 
       case 'too-many-requests':
@@ -187,69 +141,29 @@ class _LoginPageState extends State<LoginPage> {
               'Too many login attempts have been made.\n\n'
               'Please wait a little and try again.',
         );
-
         break;
 
       case 'network-request-failed':
         _showErrorDialog(
           title: 'No Internet Connection',
-          message: 'Please check your internet connection.',
-        );
-
-        break;
-
-      case 'user-disabled':
-        _showErrorDialog(
-          title: 'Account Disabled',
           message:
-              'This account has been disabled.\n\n'
-              'Please contact support.',
+              'Please check your internet connection '
+              'and try again.',
         );
-
         break;
 
       default:
         _showErrorDialog(
           title: 'Login Failed',
           message:
-              'We could not log you in.\n\n'
-              'Please try again.',
+              'Could not log in.\n\n'
+              'Please check your information and try again.',
         );
     }
   }
 
   // ==========================================================
-  // NO ACCOUNT
-  // ==========================================================
-
-  void _showNoAccountDialog() {
-    AwesomeDialog(
-      context: context,
-
-      dialogType: DialogType.warning,
-
-      animType: AnimType.rightSlide,
-
-      title: 'Email Not Found',
-
-      desc:
-          'There is no account registered with this email.\n\n'
-          'Please sign up first.',
-
-      btnOkText: 'Sign Up',
-
-      btnOkOnPress: () {
-        Navigator.pushReplacementNamed(context, '/signup');
-      },
-
-      btnCancelText: 'Cancel',
-
-      btnCancelOnPress: () {},
-    ).show();
-  }
-
-  // ==========================================================
-  // FORGOT PASSWORD DIALOG
+  // FORGOT PASSWORD
   // ==========================================================
 
   void _showForgotPasswordDialog() {
@@ -261,43 +175,29 @@ class _LoginPageState extends State<LoginPage> {
 
     AwesomeDialog(
       context: context,
-
       dialogType: DialogType.info,
-
       animType: AnimType.rightSlide,
-
       title: 'Forgot Password?',
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
-
         child: Form(
           key: formKey,
-
           child: TextFormField(
             controller: resetEmailController,
-
             keyboardType: TextInputType.emailAddress,
-
             decoration: InputDecoration(
               labelText: 'Email',
-
               hintText: 'Enter your email',
-
               prefixIcon: const Icon(Icons.email_outlined),
-
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
             ),
-
             validator: Validators.email,
           ),
         ),
       ),
-
       btnOkText: 'Send Reset Email',
-
       btnOkOnPress: () async {
         if (!formKey.currentState!.validate()) {
           return;
@@ -307,9 +207,7 @@ class _LoginPageState extends State<LoginPage> {
 
         resetEmailController.dispose();
       },
-
       btnCancelText: 'Cancel',
-
       btnCancelOnPress: () {
         resetEmailController.dispose();
       },
@@ -328,26 +226,19 @@ class _LoginPageState extends State<LoginPage> {
 
       AwesomeDialog(
         context: context,
-
         dialogType: DialogType.success,
-
         animType: AnimType.rightSlide,
-
         title: 'Email Sent',
-
         desc:
             'If an account exists with this email, '
             'you will receive a password reset email.\n\n'
             'Please check your inbox and spam folder.',
-
         btnOkOnPress: () {},
       ).show();
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
-      if (e.code == 'user-not-found') {
-        _showNoAccountDialog();
-      } else if (e.code == 'invalid-email') {
+      if (e.code == 'invalid-email') {
         _showErrorDialog(
           title: 'Invalid Email',
           message: 'Please enter a valid email address.',
@@ -360,7 +251,7 @@ class _LoginPageState extends State<LoginPage> {
               'Please try again later.',
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       _showErrorDialog(
@@ -371,74 +262,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // ==========================================================
-  // VERIFICATION
-  // ==========================================================
-
-  void _showVerificationDialog() {
-    AwesomeDialog(
-      context: context,
-
-      dialogType: DialogType.warning,
-
-      animType: AnimType.rightSlide,
-
-      title: 'Email Not Verified',
-
-      desc: 'Please verify your email before logging in.',
-
-      btnOkText: 'Resend Email',
-
-      btnOkOnPress: () async {
-        try {
-          await _authService.sendVerificationEmail();
-
-          if (!mounted) return;
-
-          AwesomeDialog(
-            context: context,
-
-            dialogType: DialogType.success,
-
-            title: 'Email Sent',
-
-            desc: 'A new verification email has been sent.',
-
-            btnOkOnPress: () {},
-          ).show();
-        } catch (e) {
-          if (!mounted) return;
-
-          _showErrorDialog(
-            title: 'Failed',
-            message: 'Could not resend verification email.',
-          );
-        }
-      },
-
-      btnCancelText: 'Cancel',
-
-      btnCancelOnPress: () {},
-    ).show();
-  }
-
-  // ==========================================================
   // ERROR DIALOG
   // ==========================================================
 
   void _showErrorDialog({required String title, required String message}) {
     AwesomeDialog(
       context: context,
-
       dialogType: DialogType.error,
-
       animType: AnimType.rightSlide,
-
       title: title,
-
       desc: message,
-
       btnOkText: 'OK',
-
       btnOkOnPress: () {},
     ).show();
   }
@@ -454,17 +288,14 @@ class _LoginPageState extends State<LoginPage> {
     return AuthLayout(
       child: Form(
         key: _formKey,
-
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-
             children: [
               SizedBox(height: size.height * 0.02),
 
               Text(
                 'Hey, Welcome back!',
-
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
@@ -474,7 +305,6 @@ class _LoginPageState extends State<LoginPage> {
 
               Text(
                 'Glad to see you, Again!',
-
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -484,62 +314,51 @@ class _LoginPageState extends State<LoginPage> {
 
               SizedBox(height: size.height * 0.05),
 
+              // ==================================================
               // EMAIL
+              // ==================================================
               SizedBox(
                 width: size.width * 0.9,
-
                 child: CustomTextFormField(
                   controller: emailController,
-
                   LabelText: 'Email',
-
                   hintText: 'Enter your email',
-
                   prefixIcon: Icons.email_outlined,
-
                   keyboardType: TextInputType.emailAddress,
-
                   validator: Validators.email,
                 ),
               ),
 
               SizedBox(height: size.height * 0.03),
 
+              // ==================================================
               // PASSWORD
+              // ==================================================
               SizedBox(
                 width: size.width * 0.9,
-
                 child: CustomTextFormField(
                   controller: passwordController,
-
                   LabelText: 'Password',
-
                   hintText: 'Enter your password',
-
                   prefixIcon: Icons.lock_outline,
-
                   isPassword: true,
-
                   validator: Validators.loginPassword,
                 ),
               ),
 
+              // ==================================================
               // FORGOT PASSWORD
+              // ==================================================
               Align(
                 alignment: Alignment.centerRight,
-
                 child: Padding(
                   padding: EdgeInsets.only(right: size.width * 0.07),
-
                   child: TextButton(
                     onPressed: _isLoading ? null : _showForgotPasswordDialog,
-
                     child: const Text(
                       'Forgot Password?',
-
                       style: TextStyle(
                         color: Appcolors.Primary,
-
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -549,29 +368,25 @@ class _LoginPageState extends State<LoginPage> {
 
               SizedBox(height: size.height * 0.01),
 
+              // ==================================================
               // LOGIN BUTTON
+              // ==================================================
               SizedBox(
                 width: size.width * 0.55,
                 height: 55,
-
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Appcolors.Primary,
-
                     elevation: 5,
-
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-
                   onPressed: _isLoading ? null : _login,
-
                   child: _isLoading
                       ? const SizedBox(
                           width: 25,
                           height: 25,
-
                           child: CircularProgressIndicator(
                             strokeWidth: 3,
                             color: Appcolors.White,
@@ -579,7 +394,6 @@ class _LoginPageState extends State<LoginPage> {
                         )
                       : const Text(
                           'Log in',
-
                           style: TextStyle(
                             color: Appcolors.White,
                             fontSize: 25,
@@ -591,61 +405,9 @@ class _LoginPageState extends State<LoginPage> {
 
               SizedBox(height: size.height * 0.05),
 
-              // OR
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-
-                      thickness: 1.5,
-
-                      indent: 20,
-                    ),
-                  ),
-
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: size.width * 0.05,
-                    ),
-
-                    child: Text(
-                      'or continue with',
-
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(context).dividerColor,
-
-                      thickness: 1.5,
-
-                      endIndent: 20,
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: size.height * 0.02),
-
-              // GOOGLE
-              InkWell(
-                onTap: _isLoading ? null : _signInWithGoogle,
-
-                borderRadius: BorderRadius.circular(30),
-
-                child: Image.asset(
-                  'assets/images/google-logo.png',
-                  width: 50,
-                  height: 50,
-                ),
-              ),
-              const SizedBox(height: 16),
+              // ==================================================
+              // SIGN UP LINK
+              // ==================================================
               Wrap(
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -659,7 +421,9 @@ class _LoginPageState extends State<LoginPage> {
                   TextButton(
                     onPressed: _isLoading
                         ? null
-                        : () => Navigator.pushNamed(context, '/signup'),
+                        : () {
+                            Navigator.pushNamed(context, '/signup');
+                          },
                     child: const Text('Sign up'),
                   ),
                 ],

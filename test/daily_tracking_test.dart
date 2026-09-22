@@ -35,6 +35,22 @@ void main() {
     expect(await sleep.loadToday(), 480);
   });
 
+  test('sleep schedule fields survive a repository restart', () async {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    await SleepRepository().saveRecordForDate(
+      yesterday,
+      const SleepRecord(
+        durationMinutes: 450,
+        bedtimeMinutes: 23 * 60,
+        wakeUpMinutes: 6 * 60 + 30,
+      ),
+    );
+    final restored = await SleepRepository().loadRecordForDate(yesterday);
+    expect(restored.durationMinutes, 450);
+    expect(restored.bedtimeMinutes, 23 * 60);
+    expect(restored.wakeUpMinutes, 6 * 60 + 30);
+  });
+
   test('legacy water and sleep records remain readable', () async {
     final today = DateTime.now();
     final yesterday = DateTime(today.year, today.month, today.day - 1);

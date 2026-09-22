@@ -3,6 +3,7 @@ import 'package:meditrack/features/medications/models/medication.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
 import 'package:meditrack/services/medication_notification_service.dart';
 import 'package:meditrack/services/medication_repository.dart';
+import 'package:meditrack/services/notification_state_repository.dart';
 
 class MedicationState {
   const MedicationState({
@@ -18,10 +19,11 @@ class MedicationState {
 }
 
 class MedicationCubit extends Cubit<MedicationState> {
-  MedicationCubit(this._repository, this._notifications)
+  MedicationCubit(this._repository, this._notifications, {this.alerts})
     : super(const MedicationState());
   final MedicationRepository _repository;
   final MedicationNotificationService _notifications;
+  final NotificationStateRepository? alerts;
 
   Future<void> load() async {
     emit(MedicationState(medications: state.medications, loading: true));
@@ -40,8 +42,21 @@ class MedicationCubit extends Cubit<MedicationState> {
     }
   }
 
-  Future<bool> add(Medication medication) =>
-      _save([...state.medications, medication]);
+  Future<bool> add(Medication medication) async {
+    final saved = await _save([...state.medications, medication]);
+    if (saved && medication.hasScheduledReminder) {
+      await alerts?.add(
+        LocalAlert(
+          id: 'medication-reminder-${medication.id}',
+          title: 'Medication reminder saved',
+          body: '${medication.name} • ${medication.formattedTime}',
+          type: 'medication',
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
+    return saved;
+  }
 
   Future<bool> update(Medication medication) => _save([
     for (final item in state.medications)

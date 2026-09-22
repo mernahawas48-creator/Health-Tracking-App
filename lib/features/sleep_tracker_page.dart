@@ -26,11 +26,16 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
   @override
   void initState() {
     super.initState();
-    _bedtime = const TimeOfDay(hour: 23, minute: 0);
+    final state = context.read<SleepCubit>().state;
+    _bedtime =
+        _timeFromMinutes(state.bedtimeMinutes) ??
+        const TimeOfDay(hour: 23, minute: 0);
     final initialDuration = widget.initialSleepMinutes == 0
         ? widget.goalMinutes
         : widget.initialSleepMinutes;
-    _wakeUpTime = _timeAfter(_bedtime, initialDuration);
+    _wakeUpTime =
+        _timeFromMinutes(state.wakeUpMinutes) ??
+        _timeAfter(_bedtime, initialDuration);
   }
 
   int get _sleepMinutes {
@@ -42,7 +47,11 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
   }
 
   Future<void> _save() async {
-    final saved = await context.read<SleepCubit>().save(_sleepMinutes);
+    final saved = await context.read<SleepCubit>().save(
+      _sleepMinutes,
+      bedtimeMinutes: _bedtime.hour * 60 + _bedtime.minute,
+      wakeUpMinutes: _wakeUpTime.hour * 60 + _wakeUpTime.minute,
+    );
     if (saved && mounted) Navigator.pop(context, _sleepMinutes);
   }
 
@@ -62,6 +71,11 @@ class _SleepTrackerPageState extends State<SleepTrackerPage> {
   TimeOfDay _timeAfter(TimeOfDay time, int minutes) {
     final total = (time.hour * 60 + time.minute + minutes) % (24 * 60);
     return TimeOfDay(hour: total ~/ 60, minute: total % 60);
+  }
+
+  TimeOfDay? _timeFromMinutes(int? minutes) {
+    if (minutes == null || minutes < 0 || minutes >= 24 * 60) return null;
+    return TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
   }
 
   String _formatDuration(int minutes) {

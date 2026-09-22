@@ -89,78 +89,113 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
   Future<void> finishProfile() async {
     if (_finishing) return;
+
     final name = nameController.text.trim();
-    height = double.tryParse(heightController.text.trim());
-    weight = double.tryParse(weightController.text.trim());
+
+    final heightValue = double.tryParse(heightController.text.trim());
+
+    final weightValue = double.tryParse(weightController.text.trim());
+
     if (name.isEmpty ||
-        (heightController.text.trim().isNotEmpty &&
-            (height == null || height! <= 0)) ||
-        (weightController.text.trim().isNotEmpty &&
-            (weight == null || weight! <= 0))) {
+        heightValue == null ||
+        heightValue <= 0 ||
+        weightValue == null ||
+        weightValue <= 0 ||
+        gender == null ||
+        dateOfBirth == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enter a name and valid height and weight.'),
+          content: Text('Please complete your profile information.'),
         ),
       );
       return;
     }
+
     setState(() => _finishing = true);
+
     try {
-      final controller = AppSettingsScope.of(context);
-      if (controller.uid == null) {
-        final configured = await context.read<SessionCubit>().prepareAccount();
-        if (configured == null) throw StateError('No Firebase account.');
+      final settingsController = AppSettingsScope.of(context);
+
+      // -----------------------------
+      // Calculate age from birth date
+      // -----------------------------
+
+      final today = DateTime.now();
+      final birthday = dateOfBirth!;
+
+      int age = today.year - birthday.year;
+
+      if (today.month < birthday.month ||
+          (today.month == birthday.month && today.day < birthday.day)) {
+        age--;
       }
-      final uid = controller.uid!;
-      String? imagePath;
+
+      // -----------------------------
+      // Save profile image locally
+      // -----------------------------
+
+      String? imagePath = settingsController.settings.profileImagePath;
+
       if (profileImage != null) {
         final directory = await getApplicationSupportDirectory();
+
         final extension = profileImage!.path.split('.').last.toLowerCase();
+
         final savedImage = await profileImage!.copy(
-          '${directory.path}/profile_photo_$uid.${extension == 'png' ? 'png' : 'jpg'}',
+          '${directory.path}/profile_photo.'
+          '${extension == 'png' ? 'png' : 'jpg'}',
         );
+
         imagePath = savedImage.path;
       }
-      if (!mounted) return;
-      final today = DateTime.now();
-      final birthday = dateOfBirth;
-      final age = birthday == null
-          ? null
-          : today.year -
-                birthday.year -
-                ((today.month < birthday.month ||
-                        (today.month == birthday.month &&
-                            today.day < birthday.day))
-                    ? 1
-                    : 0);
-      await controller.update(
-        controller.settings.copyWith(
+
+      // -----------------------------
+      // Save ALL profile information
+      // -----------------------------
+
+      await settingsController.update(
+        settingsController.settings.copyWith(
           displayName: name,
+
           profileSetupComplete: true,
+
           dateOfBirth: birthday,
+
           age: age,
+
           gender: gender,
-          heightCm: height,
-          weightKg: weight,
-          healthGoals: List.of(goals),
+
+          heightCm: heightValue,
+
+          weightKg: weightValue,
+
+          healthGoals: List<String>.from(goals),
+
           profileImagePath: imagePath,
         ),
       );
+
       if (!mounted) return;
-      final signedIn = await context.read<SessionCubit>().signIn();
+
+      // -----------------------------
+      // Go to Home
+      // -----------------------------
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    } catch (e) {
+      debugPrint('Error saving profile: $e');
+
       if (!mounted) return;
-      if (!signedIn) throw StateError('Could not start the Firebase session.');
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not save your profile. Please try again.'),
-          ),
-        );
-      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save profile. Please try again.'),
+        ),
+      );
     } finally {
-      if (mounted) setState(() => _finishing = false);
+      if (mounted) {
+        setState(() => _finishing = false);
+      }
     }
   }
 
@@ -639,67 +674,36 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   // ==========================================================
 
   Widget _buildGoalSelector() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+    return Column(
+      children: HealthGoals.available.map((goal) {
+        final isSelected = goals.contains(goal);
 
-      children: HealthGoals.available.map((item) {
-        final bool isSelected = goals.contains(item);
+        return CheckboxListTile(
+          value: isSelected,
 
-        return GestureDetector(
-          onTap: () {
+          activeColor: Appcolors.Primary,
+
+          contentPadding: EdgeInsets.zero,
+
+          controlAffinity: ListTileControlAffinity.leading,
+
+          title: Text(
+            HealthGoals.label(context, goal),
+
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          ),
+
+          onChanged: (selected) {
             setState(() {
-              if (isSelected) {
-                goals.remove(item);
+              if (selected ?? false) {
+                if (!goals.contains(goal)) {
+                  goals.add(goal);
+                }
               } else {
-                goals.add(item);
+                goals.remove(goal);
               }
             });
           },
-
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-
-            decoration: BoxDecoration(
-              color: isSelected ? Appcolors.Primary : Colors.grey.shade50,
-
-              borderRadius: BorderRadius.circular(14),
-
-              border: Border.all(
-                color: isSelected ? Appcolors.Primary : Colors.grey.shade200,
-              ),
-            ),
-
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-
-              children: [
-                Text(
-                  HealthGoals.label(context, item),
-
-                  style: TextStyle(
-                    color: isSelected ? Appcolors.White : Colors.grey.shade700,
-
-                    fontSize: 13,
-
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                if (isSelected) ...[
-                  const SizedBox(width: 6),
-
-                  const Icon(
-                    Icons.check_rounded,
-                    color: Appcolors.White,
-                    size: 16,
-                  ),
-                ],
-              ],
-            ),
-          ),
         );
       }).toList(),
     );

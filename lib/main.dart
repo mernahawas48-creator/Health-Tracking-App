@@ -4,8 +4,6 @@ import 'package:meditrack/app/app.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/services/medication_notification_service.dart';
 import 'package:meditrack/core/di/injection.dart';
-import 'package:meditrack/services/account_firestore.dart';
-import 'package:meditrack/services/habit_streak_service.dart';
 
 import 'firebase_options.dart';
 
@@ -17,8 +15,6 @@ Future<void> main() async {
 
   // Dependency Injection
   setupDependencies();
-
-  HabitStreakService.account = getIt<AccountFirestore>();
 
   // Notifications
   try {

@@ -32,7 +32,7 @@ void setupDependencies() {
   }
   if (!getIt.isRegistered<NotificationStateRepository>()) {
     getIt.registerLazySingleton<NotificationStateRepository>(
-      () => NotificationStateRepository(getIt()),
+      () => NotificationStateRepository(),
     );
   }
   if (!getIt.isRegistered<HealthAssistantService>()) {
@@ -47,7 +47,7 @@ void setupDependencies() {
   }
   if (!getIt.isRegistered<MedicationRepository>()) {
     getIt.registerLazySingleton<MedicationRepository>(
-      () => FirestoreMedicationRepository(getIt()),
+      () => MedicationRepository(),
     );
   }
   if (!getIt.isRegistered<MedicationNotificationService>()) {
@@ -57,25 +57,21 @@ void setupDependencies() {
   }
   if (!getIt.isRegistered<NutritionRepository>()) {
     getIt.registerLazySingleton<NutritionRepository>(
-      () => FirestoreNutritionRepository(getIt()),
+      () => NutritionRepository(),
     );
   }
   if (!getIt.isRegistered<UsdaFoodService>()) {
     getIt.registerLazySingleton<UsdaFoodService>(() => UsdaFoodService());
   }
   if (!getIt.isRegistered<WaterRepository>()) {
-    getIt.registerLazySingleton<WaterRepository>(
-      () => FirestoreWaterRepository(getIt()),
-    );
+    getIt.registerLazySingleton<WaterRepository>(() => WaterRepository());
   }
   if (!getIt.isRegistered<SleepRepository>()) {
-    getIt.registerLazySingleton<SleepRepository>(
-      () => FirestoreSleepRepository(getIt()),
-    );
+    getIt.registerLazySingleton<SleepRepository>(() => SleepRepository());
   }
   if (!getIt.isRegistered<MedicationCubit>()) {
     getIt.registerFactory<MedicationCubit>(
-      () => MedicationCubit(getIt(), getIt()),
+      () => MedicationCubit(getIt(), getIt(), alerts: getIt()),
     );
   }
   if (!getIt.isRegistered<NutritionCubit>()) {

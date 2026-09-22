@@ -3,20 +3,31 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   FirebaseAuth get _auth => FirebaseAuth.instance;
+
   static Future<void>? _googleInitialization;
+
+  // ==========================================================
+  // GOOGLE SIGN IN
+  // ==========================================================
 
   Future<UserCredential> signInWithGoogle() async {
     final google = GoogleSignIn.instance;
+
     try {
       await (_googleInitialization ??= google.initialize());
     } catch (_) {
       _googleInitialization = null;
       rethrow;
     }
+
     final account = await google.authenticate();
+
     final idToken = account.authentication.idToken;
-    if (idToken == null)
+
+    if (idToken == null) {
       throw StateError('Google did not provide an ID token.');
+    }
+
     return _auth.signInWithCredential(
       GoogleAuthProvider.credential(idToken: idToken),
     );
@@ -31,7 +42,7 @@ class AuthService {
     required String password,
   }) async {
     return await _auth.createUserWithEmailAndPassword(
-      email: email,
+      email: email.trim(),
       password: password,
     );
   }
@@ -45,13 +56,14 @@ class AuthService {
     required String password,
   }) async {
     return await _auth.signInWithEmailAndPassword(
-      email: email,
+      email: email.trim(),
       password: password,
     );
   }
 
   // ==========================================================
   // SEND VERIFICATION EMAIL
+  // Not required for login, but kept for compatibility
   // ==========================================================
 
   Future<void> sendVerificationEmail() async {
@@ -64,6 +76,7 @@ class AuthService {
 
   // ==========================================================
   // CHECK EMAIL VERIFICATION
+  // Not required for login
   // ==========================================================
 
   Future<bool> isEmailVerified() async {
@@ -79,7 +92,7 @@ class AuthService {
   // ==========================================================
 
   Future<void> sendPasswordResetEmail({required String email}) async {
-    await _auth.sendPasswordResetEmail(email: email);
+    await _auth.sendPasswordResetEmail(email: email.trim());
   }
 
   // ==========================================================
@@ -88,11 +101,12 @@ class AuthService {
 
   Future<void> logout() async {
     await _auth.signOut();
+
     if (_googleInitialization != null) {
       try {
         await GoogleSignIn.instance.signOut();
       } catch (_) {
-        // Firebase is signed out even if the optional Google session expired.
+        // Firebase has already been signed out.
       }
     }
   }
@@ -102,5 +116,6 @@ class AuthService {
   // ==========================================================
 
   User? get currentUser => _auth.currentUser;
+
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }

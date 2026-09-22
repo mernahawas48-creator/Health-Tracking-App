@@ -12,27 +12,28 @@ class NotificationCenterPage extends StatefulWidget {
 }
 
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
-  bool _read = false;
+  List<LocalAlert> _alerts = const [];
   NotificationStateRepository get _repository =>
       getIt<NotificationStateRepository>();
+  Future<void> _load() async {
+    final alerts = await _repository.load();
+    if (mounted) setState(() => _alerts = alerts);
+  }
+
   Future<void> _markAll() async {
-    setState(() => _read = true);
-    try {
-      await _repository.markRead();
-    } catch (_) {
-      if (mounted) setState(() => _read = false);
-    }
+    await _repository.markAllRead();
+    await _load();
+  }
+
+  Future<void> _markRead(String id) async {
+    await _repository.markRead(id);
+    await _load();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository
-        .isRead()
-        .then((value) {
-          if (mounted) setState(() => _read = value);
-        })
-        .catchError((Object _) {});
+    _load();
   }
 
   @override
@@ -50,39 +51,38 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            color: _read ? context.appSurface : context.appMutedSurface,
-            child: ListTile(
-              leading: Icon(
-                Icons.notifications_active_outlined,
-                color: Appcolors.SecondaryOrange,
-              ),
-              title: Text(ar ? 'تذكيرات الأدوية' : 'Medication reminders'),
-              subtitle: Text(
-                ar
-                    ? 'تظهر تذكيرات الأدوية المجدولة هنا.'
-                    : 'Your scheduled medication reminders appear here.',
-              ),
-              trailing: _read
-                  ? null
-                  : Icon(
-                      Icons.circle,
-                      size: 10,
-                      color: Appcolors.SecondaryOrange,
+        children: _alerts.isEmpty
+            ? [
+                Center(
+                  child: Text(
+                    ar ? 'لا توجد تنبيهات محفوظة.' : 'No saved alerts yet.',
+                  ),
+                ),
+              ]
+            : [
+                for (final alert in _alerts)
+                  Card(
+                    color: alert.read
+                        ? context.appSurface
+                        : context.appMutedSurface,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.notifications_active_outlined,
+                        color: Appcolors.SecondaryOrange,
+                      ),
+                      title: Text(alert.title),
+                      subtitle: Text(alert.body),
+                      trailing: alert.read
+                          ? null
+                          : Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: Appcolors.SecondaryOrange,
+                            ),
+                      onTap: () => _markRead(alert.id),
                     ),
-              onTap: _markAll,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: Text(
-              ar
-                  ? 'ستظهر التذكيرات الجديدة هنا.'
-                  : 'New reminders will appear here.',
-            ),
-          ),
-        ],
+                  ),
+              ],
       ),
     );
   }

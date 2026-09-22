@@ -6,6 +6,8 @@ import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
 import 'package:meditrack/services/medication_repository.dart';
 import 'package:meditrack/services/nutrition_repository.dart';
+import 'package:meditrack/services/water_repository.dart';
+import 'package:meditrack/services/sleep_repository.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class ReportsPage extends StatelessWidget {
@@ -46,23 +48,19 @@ class ReportsPage extends StatelessWidget {
               icon: Icons.water_drop_outlined,
               color: Colors.blue,
               title: settings.isArabic ? 'الماء' : 'Water',
-              value: settings.isArabic
-                  ? 'سلسلة ${data.waterStreak} يوم'
-                  : '${data.waterStreak} day streak',
+              value: '${data.weekWaterMl} ml',
               detail: settings.isArabic
-                  ? 'استمر في تحقيق هدف ${settings.waterGoalMl} مل.'
-                  : 'Keep meeting your ${settings.waterGoalMl} ml goal.',
+                  ? 'إجمالي آخر 7 أيام • سلسلة ${data.waterStreak} يوم'
+                  : 'Last 7 days • ${data.waterStreak} day streak',
             ),
             _ReportCard(
               icon: Icons.bedtime_outlined,
               color: Colors.indigo,
               title: settings.isArabic ? 'النوم' : 'Sleep',
-              value: settings.isArabic
-                  ? 'سلسلة ${data.sleepStreak} يوم'
-                  : '${data.sleepStreak} day streak',
+              value: '${data.weekSleepMinutes ~/ 60} h',
               detail: settings.isArabic
-                  ? 'الهدف: ${settings.sleepGoalMinutes ~/ 60} ساعات كل ليلة.'
-                  : 'Goal: ${settings.sleepGoalMinutes ~/ 60} hours each night.',
+                  ? 'إجمالي آخر 7 أيام • سلسلة ${data.sleepStreak} يوم'
+                  : 'Last 7 days • ${data.sleepStreak} day streak',
             ),
             _ReportCard(
               icon: Icons.medication_outlined,
@@ -94,21 +92,35 @@ class ReportsPage extends StatelessWidget {
     final localMedications = medications.isEmpty
         ? await MedicationRepository().load()
         : medications;
-    final med = MedicationAdherenceService.summaryForToday(localMedications);
+    var scheduled = 0;
+    var taken = 0;
     var calories = 0.0;
+    var waterMl = 0;
+    var sleepMinutes = 0;
+    final waterRepository = WaterRepository();
+    final sleepRepository = SleepRepository();
     for (var daysAgo = 0; daysAgo < 7; daysAgo++) {
-      final logs = await NutritionRepository().loadForDate(
-        DateTime.now().subtract(Duration(days: daysAgo)),
-      );
+      final date = DateTime.now().subtract(Duration(days: daysAgo));
+      final logs = await NutritionRepository().loadForDate(date);
       calories += logs.fold(0, (sum, log) => sum + log.calories);
+      waterMl += await waterRepository.loadForDate(date);
+      sleepMinutes += await sleepRepository.loadForDate(date);
+      final adherence = MedicationAdherenceService.summaryForDate(
+        localMedications,
+        date,
+      );
+      scheduled += adherence.scheduledCount;
+      taken += adherence.takenCount;
     }
     return _ReportData(
       water,
       sleep,
-      med.scheduledCount,
-      med.takenCount,
-      med.scheduledCount == 0 ? 0 : (med.completionRate * 100).round(),
+      scheduled,
+      taken,
+      scheduled == 0 ? 0 : ((taken / scheduled) * 100).round(),
       calories.round(),
+      waterMl,
+      sleepMinutes,
     );
   }
 }
@@ -121,13 +133,17 @@ class _ReportData {
     this.taken,
     this.medicationRate,
     this.weekCalories,
+    this.weekWaterMl,
+    this.weekSleepMinutes,
   );
   final int waterStreak,
       sleepStreak,
       scheduled,
       taken,
       medicationRate,
-      weekCalories;
+      weekCalories,
+      weekWaterMl,
+      weekSleepMinutes;
 }
 
 class _ReportCard extends StatelessWidget {
