@@ -39,10 +39,10 @@ class NutritionRepository {
         // Drop malformed records while preserving valid history.
       }
     }
-    await preferences.setStringList(
-      _storageKey,
-      [...otherDays, ...logs.map((log) => jsonEncode(log.toJson()))],
-    );
+    await preferences.setStringList(_storageKey, [
+      ...otherDays,
+      ...logs.map((log) => jsonEncode(log.toJson())),
+    ]);
   }
 
   bool _isSameDay(DateTime first, DateTime second) =>

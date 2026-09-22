@@ -10,19 +10,25 @@ class MedicationNotificationService {
   static const sleepReminderId = 9002;
   MedicationNotificationService._();
   static final instance = MedicationNotificationService._();
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
-    await _plugin.initialize(const InitializationSettings(
-      android: AndroidInitializationSettings('@drawable/notification_icon'),
-    ));
+    await _plugin.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@drawable/notification_icon'),
+      ),
+    );
     await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
   }
 
-  int _notificationId(Medication medication) => medication.id.hashCode & 0x7fffffff;
+  int _notificationId(Medication medication) =>
+      medication.id.hashCode & 0x7fffffff;
 
   Future<void> sync(Medication medication) async {
     await cancel(medication);
@@ -35,7 +41,13 @@ class MedicationNotificationService {
       '${medication.name} • ${medication.dosage}',
       tz.TZDateTime.from(next, tz.local),
       const NotificationDetails(
-        android: AndroidNotificationDetails('medication_reminders', 'Medication reminders', channelDescription: 'Scheduled reminders for medication doses', importance: Importance.high, priority: Priority.high),
+        android: AndroidNotificationDetails(
+          'medication_reminders',
+          'Medication reminders',
+          channelDescription: 'Scheduled reminders for medication doses',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
       ),
       // Exact alarms can be denied by Android/emulators. An inexact reminder
       // still delivers reliably without making medication saving fail.
@@ -54,17 +66,51 @@ class MedicationNotificationService {
     }
   }
 
-  Future<void> setDailyWellnessReminder({required int id, required String title, required String body, required bool enabled, required int hour}) async {
+  Future<void> setDailyWellnessReminder({
+    required int id,
+    required String title,
+    required String body,
+    required bool enabled,
+    required int hour,
+  }) async {
     await _plugin.cancel(id);
     if (!enabled) return;
     final now = DateTime.now();
     var time = DateTime(now.year, now.month, now.day, hour);
     if (!time.isAfter(now)) time = time.add(const Duration(days: 1));
-    try { await _plugin.zonedSchedule(id, title, body, tz.TZDateTime.from(time, tz.local), const NotificationDetails(android: AndroidNotificationDetails('wellness_reminders','Wellness reminders',importance: Importance.defaultImportance)), androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, matchDateTimeComponents: DateTimeComponents.time); } catch (_) {}
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(time, tz.local),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'wellness_reminders',
+            'Wellness reminders',
+            importance: Importance.defaultImportance,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (_) {}
   }
 
   Future<void> restoreWellnessReminders(AppSettings settings) async {
-    await setDailyWellnessReminder(id: waterReminderId, title: 'Water reminder', body: 'Time for a glass of water.', enabled: settings.waterReminderEnabled, hour: settings.waterReminderHour);
-    await setDailyWellnessReminder(id: sleepReminderId, title: 'Sleep reminder', body: 'Start your wind-down routine.', enabled: settings.sleepReminderEnabled, hour: settings.sleepReminderHour);
+    await setDailyWellnessReminder(
+      id: waterReminderId,
+      title: 'Water reminder',
+      body: 'Time for a glass of water.',
+      enabled: settings.waterReminderEnabled,
+      hour: settings.waterReminderHour,
+    );
+    await setDailyWellnessReminder(
+      id: sleepReminderId,
+      title: 'Sleep reminder',
+      body: 'Start your wind-down routine.',
+      enabled: settings.sleepReminderEnabled,
+      hour: settings.sleepReminderHour,
+    );
   }
 }

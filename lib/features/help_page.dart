@@ -5,7 +5,10 @@ class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
 
   static const topics = <(String, String)>[
-    ('Getting started', 'Set goals in Profile, then use Home cards to log your day.'),
+    (
+      'Getting started',
+      'Set goals in Profile, then use Home cards to log your day.',
+    ),
     ('Medications', 'Add medicines and mark doses Taken or Skipped.'),
     ('Nutrition', 'Search foods and review calories and macros.'),
     ('Water and sleep', 'Log progress and manage reminders in Settings.'),
@@ -20,18 +23,25 @@ class HelpPage extends StatelessWidget {
     appBar: AppBar(title: const Text('Help and support')),
     body: ListView(
       padding: const EdgeInsets.all(16),
-      children: topics.map((topic) => Card(
-        child: ExpansionTile(
-          iconColor: Appcolors.Primary,
-          title: Text(topic.$1, style: const TextStyle(fontWeight: FontWeight.bold)),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(topic.$2),
+      children: topics
+          .map(
+            (topic) => Card(
+              child: ExpansionTile(
+                iconColor: Appcolors.Primary,
+                title: Text(
+                  topic.$1,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Text(topic.$2),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      )).toList(),
+          )
+          .toList(),
     ),
   );
 }

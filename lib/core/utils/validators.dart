@@ -1,5 +1,4 @@
 class Validators {
-
   // ==========================================================
   // EMAIL
   // ==========================================================
@@ -9,9 +8,7 @@ class Validators {
       return 'Please enter your email';
     }
 
-    final emailRegex = RegExp(
-      r'^[\w\.-]+@[\w\.-]+\.\w+$',
-    );
+    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
 
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Please enter a valid email';
@@ -64,10 +61,7 @@ class Validators {
   // CONFIRM PASSWORD
   // ==========================================================
 
-  static String? confirmPassword(
-    String? value,
-    String password,
-  ) {
+  static String? confirmPassword(String? value, String password) {
     if (value == null || value.isEmpty) {
       return 'Please confirm your password';
     }

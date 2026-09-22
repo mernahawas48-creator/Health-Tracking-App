@@ -24,13 +24,10 @@ class CustomTextFormField extends StatefulWidget {
   });
 
   @override
-  State<CustomTextFormField> createState() =>
-      _CustomTextFormFieldState();
+  State<CustomTextFormField> createState() => _CustomTextFormFieldState();
 }
 
-class _CustomTextFormFieldState
-    extends State<CustomTextFormField> {
-
+class _CustomTextFormFieldState extends State<CustomTextFormField> {
   bool _obscureText = true;
 
   @override
@@ -38,8 +35,7 @@ class _CustomTextFormFieldState
     return TextFormField(
       controller: widget.controller,
 
-      obscureText:
-          widget.isPassword ? _obscureText : false,
+      obscureText: widget.isPassword ? _obscureText : false,
 
       keyboardType: widget.keyboardType,
 
@@ -70,15 +66,10 @@ class _CustomTextFormFieldState
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
 
-          borderSide: const BorderSide(
-            color: Appcolors.Primary,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Appcolors.Primary, width: 1.5),
         ),
 
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }

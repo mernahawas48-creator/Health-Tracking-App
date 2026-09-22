@@ -51,13 +51,13 @@ class MedicationAdherenceService {
   static int currentStreak(List<Medication> medications) {
     var day = _dateOnly(DateTime.now());
     if (!_isFullyCompleted(medications, day)) {
-      day = day.subtract(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day - 1);
     }
 
     var streak = 0;
     while (_isFullyCompleted(medications, day)) {
       streak++;
-      day = day.subtract(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day - 1);
     }
     return streak;
   }

@@ -12,6 +12,7 @@ import 'package:meditrack/features/privacy_page.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
+import 'package:meditrack/models/health_goals.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -368,7 +369,7 @@ class _HealthPlanCard extends StatelessWidget {
                     Text(
                       goals.isEmpty
                           ? AppStrings.of(context).text('noGoalsSelected')
-                          : _focusMessage(context, goals.first),
+                          : HealthGoals.focusMessage(context, goals.first),
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -391,7 +392,7 @@ class _HealthPlanCard extends StatelessWidget {
                           size: 16,
                           color: Appcolors.Primary,
                         ),
-                        label: Text(_localizedGoal(context, goal)),
+                        label: Text(HealthGoals.label(context, goal)),
                         backgroundColor: context.appMutedSurface,
                         side: BorderSide.none,
                       ),
@@ -834,14 +835,6 @@ class _EditProfilePageState extends State<_EditProfilePage> {
   late Set<String> _selectedGoals;
   String? _gender;
 
-  static const _goals = [
-    'Build healthy habits',
-    'Improve sleep',
-    'Stay active',
-    'Eat healthier',
-    'Manage medications',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1003,12 +996,12 @@ class _EditProfilePageState extends State<_EditProfilePage> {
                       style: TextStyle(color: context.appSecondaryText),
                     ),
                     const SizedBox(height: 8),
-                    ..._goals.map(
+                    ...HealthGoals.available.map(
                       (goal) => CheckboxListTile(
                         value: _selectedGoals.contains(goal),
                         activeColor: Appcolors.Primary,
                         contentPadding: EdgeInsets.zero,
-                        title: Text(_localizedGoal(context, goal)),
+                        title: Text(HealthGoals.label(context, goal)),
                         onChanged: (selected) {
                           setState(() {
                             if (selected ?? false) {
@@ -1109,27 +1102,4 @@ class _PersonalField extends StatelessWidget {
       ),
     ),
   );
-}
-
-String _localizedGoal(BuildContext context, String goal) {
-  final strings = AppStrings.of(context);
-  return switch (goal) {
-    'Build healthy habits' => strings.text('goalBuildHabits'),
-    'Improve sleep' => strings.text('goalImproveSleep'),
-    'Stay active' => strings.text('goalStayActive'),
-    'Eat healthier' => strings.text('goalEatHealthier'),
-    'Manage medications' => strings.text('goalManageMedications'),
-    _ => goal,
-  };
-}
-
-String _focusMessage(BuildContext context, String goal) {
-  final strings = AppStrings.of(context);
-  return switch (goal) {
-    'Manage medications' => strings.text('focusMedication'),
-    'Improve sleep' => strings.text('focusSleep'),
-    'Stay active' => strings.text('focusActivity'),
-    'Eat healthier' => strings.text('focusNutrition'),
-    _ => strings.text('focusHabits'),
-  };
 }

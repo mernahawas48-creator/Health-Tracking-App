@@ -46,32 +46,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
               alignment: AlignmentDirectional.centerEnd,
               child: PopupMenuButton<String>(
                 onSelected: (code) => settingsController.update(
-                  settingsController.settings.copyWith(
-                    languageCode: code,
-                  ),
+                  settingsController.settings.copyWith(languageCode: code),
                 ),
                 itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'en',
-                    child: Text('English'),
-                  ),
-                  PopupMenuItem(
-                    value: 'ar',
-                    child: Text('العربية'),
-                  ),
+                  PopupMenuItem(value: 'en', child: Text('English')),
+                  PopupMenuItem(value: 'ar', child: Text('العربية')),
                 ],
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    top: 12,
-                    end: 20,
-                  ),
+                  padding: const EdgeInsetsDirectional.only(top: 12, end: 20),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.language_rounded,
-                        color: Appcolors.Primary,
-                      ),
+                      Icon(Icons.language_rounded, color: Appcolors.Primary),
                       const SizedBox(width: 6),
                       Text(
                         strings.isArabic ? 'العربية' : 'English',

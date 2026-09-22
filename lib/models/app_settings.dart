@@ -12,12 +12,14 @@ class AppSettings {
     this.theme = AppThemePreference.system,
     this.languageCode = 'en',
     this.healthGoals = const [],
+    this.dateOfBirth,
     this.age,
     this.gender,
     this.heightCm,
     this.weightKg,
     this.profileImagePath,
     this.displayName = 'User Name',
+    this.profileSetupComplete = false,
     this.waterReminderEnabled = false,
     this.sleepReminderEnabled = false,
     this.waterReminderHour = 10,
@@ -32,12 +34,14 @@ class AppSettings {
   final AppThemePreference theme;
   final String languageCode;
   final List<String> healthGoals;
+  final DateTime? dateOfBirth;
   final int? age;
   final String? gender;
   final double? heightCm;
   final double? weightKg;
   final String? profileImagePath;
   final String displayName;
+  final bool profileSetupComplete;
   final bool waterReminderEnabled;
   final bool sleepReminderEnabled;
   final int waterReminderHour;
@@ -54,12 +58,14 @@ class AppSettings {
     AppThemePreference? theme,
     String? languageCode,
     List<String>? healthGoals,
+    DateTime? dateOfBirth,
     int? age,
     String? gender,
     double? heightCm,
     double? weightKg,
     String? profileImagePath,
     String? displayName,
+    bool? profileSetupComplete,
     bool? waterReminderEnabled,
     bool? sleepReminderEnabled,
     int? waterReminderHour,
@@ -74,12 +80,14 @@ class AppSettings {
       theme: theme ?? this.theme,
       languageCode: languageCode ?? this.languageCode,
       healthGoals: healthGoals ?? this.healthGoals,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       age: age ?? this.age,
       gender: gender ?? this.gender,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
       profileImagePath: profileImagePath ?? this.profileImagePath,
       displayName: displayName ?? this.displayName,
+      profileSetupComplete: profileSetupComplete ?? this.profileSetupComplete,
       waterReminderEnabled: waterReminderEnabled ?? this.waterReminderEnabled,
       sleepReminderEnabled: sleepReminderEnabled ?? this.sleepReminderEnabled,
       waterReminderHour: waterReminderHour ?? this.waterReminderHour,
@@ -96,12 +104,14 @@ class AppSettings {
     'theme': theme.name,
     'languageCode': languageCode,
     'healthGoals': healthGoals,
+    'dateOfBirth': dateOfBirth?.toIso8601String(),
     'age': age,
     'gender': gender,
     'heightCm': heightCm,
     'weightKg': weightKg,
     'profileImagePath': profileImagePath,
     'displayName': displayName,
+    'profileSetupComplete': profileSetupComplete,
     'waterReminderEnabled': waterReminderEnabled,
     'sleepReminderEnabled': sleepReminderEnabled,
     'waterReminderHour': waterReminderHour,
@@ -127,12 +137,16 @@ class AppSettings {
     healthGoals: (json['healthGoals'] as List? ?? const [])
         .whereType<String>()
         .toList(),
+    dateOfBirth: DateTime.tryParse(json['dateOfBirth'] as String? ?? ''),
     age: (json['age'] as num?)?.toInt(),
     gender: json['gender'] as String?,
     heightCm: (json['heightCm'] as num?)?.toDouble(),
     weightKg: (json['weightKg'] as num?)?.toDouble(),
     profileImagePath: json['profileImagePath'] as String?,
     displayName: json['displayName'] as String? ?? 'User Name',
+    profileSetupComplete:
+        json['profileSetupComplete'] as bool? ??
+        (json['displayName'] is String && json['displayName'] != 'User Name'),
     waterReminderEnabled: json['waterReminderEnabled'] as bool? ?? false,
     sleepReminderEnabled: json['sleepReminderEnabled'] as bool? ?? false,
     waterReminderHour: (json['waterReminderHour'] as num?)?.toInt() ?? 10,

@@ -27,9 +27,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
     );
 
     if (pickedFile != null) {
-      widget.onImageSelected(
-        File(pickedFile.path),
-      );
+      widget.onImageSelected(File(pickedFile.path));
     }
   }
 
@@ -46,11 +44,7 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
                 ? FileImage(widget.image!)
                 : null,
             child: widget.image == null
-                ? Icon(
-                    Icons.person,
-                    size: 50,
-                    color: Appcolors.Primary,
-                  )
+                ? Icon(Icons.person, size: 50, color: Appcolors.Primary)
                 : null,
           ),
 
@@ -72,8 +66,6 @@ class _ProfileImagePickerState extends State<ProfileImagePicker> {
           ),
         ],
       ),
-      
-
     );
   }
 }

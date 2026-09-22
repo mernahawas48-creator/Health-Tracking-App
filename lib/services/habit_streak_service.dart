@@ -33,15 +33,16 @@ class HabitStreakService {
     final dates = preferences.getStringList(_key(habit)) ?? [];
     final completedDates = dates.toSet();
 
-    var day = DateTime.now();
+    final now = DateTime.now();
+    var day = DateTime(now.year, now.month, now.day);
     if (!completedDates.contains(_dateKey(day))) {
-      day = day.subtract(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day - 1);
     }
 
     var streak = 0;
     while (completedDates.contains(_dateKey(day))) {
       streak++;
-      day = day.subtract(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day - 1);
     }
     return streak;
   }

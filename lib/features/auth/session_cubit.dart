@@ -4,9 +4,12 @@ import 'package:meditrack/services/local_session_service.dart';
 enum SessionStatus { loading, onboarding, signedOut, signedIn, failure }
 
 class SessionCubit extends Cubit<SessionStatus> {
-  SessionCubit(this._session) : super(SessionStatus.loading);
+  SessionCubit(this._session, {Future<void> Function()? signOutExistingAuth})
+    : _signOutExistingAuth = signOutExistingAuth,
+      super(SessionStatus.loading);
 
   final LocalSessionService _session;
+  final Future<void> Function()? _signOutExistingAuth;
 
   Future<void> restore() async {
     emit(SessionStatus.loading);
@@ -51,6 +54,7 @@ class SessionCubit extends Cubit<SessionStatus> {
 
   Future<bool> signOut() async {
     try {
+      await _signOutExistingAuth?.call();
       await _session.endSession();
       emit(SessionStatus.signedOut);
       return true;

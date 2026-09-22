@@ -1,6 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:meditrack/features/auth/session_cubit.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
+import 'package:meditrack/models/health_goals.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/features/create_profile/widgets/gender_selector.dart';
 import 'package:meditrack/features/create_profile/widgets/profile_date_field.dart';
@@ -19,6 +24,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   // ----------------------------------------------------------
 
   final PageController _pageController = PageController();
+  final TextEditingController nameController = TextEditingController();
 
   final TextEditingController heightController = TextEditingController();
   final TextEditingController weightController = TextEditingController();
@@ -37,6 +43,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   List<String> goals = [];
 
   int currentPage = 0;
+  bool _finishing = false;
 
   // ----------------------------------------------------------
   // DISPOSE
@@ -45,6 +52,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   @override
   void dispose() {
     _pageController.dispose();
+    nameController.dispose();
     heightController.dispose();
     weightController.dispose();
 
@@ -79,20 +87,76 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   // FINISH PROFILE
   // ----------------------------------------------------------
 
-  void finishProfile() {
-    height = double.tryParse(heightController.text);
-    weight = double.tryParse(weightController.text);
-
-    debugPrint('Profile completed');
-    debugPrint('Date of Birth: $dateOfBirth');
-    debugPrint('Gender: $gender');
-    debugPrint('Height: $height cm');
-    debugPrint('Weight: $weight kg');
-    debugPrint('Goals: $goals');
-
-    // TODO:
-    // Save profile data to Firebase / local storage
-    // Then navigate to Home Page
+  Future<void> finishProfile() async {
+    if (_finishing) return;
+    final name = nameController.text.trim();
+    height = double.tryParse(heightController.text.trim());
+    weight = double.tryParse(weightController.text.trim());
+    if (name.isEmpty ||
+        (heightController.text.trim().isNotEmpty &&
+            (height == null || height! <= 0)) ||
+        (weightController.text.trim().isNotEmpty &&
+            (weight == null || weight! <= 0))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a name and valid height and weight.'),
+        ),
+      );
+      return;
+    }
+    setState(() => _finishing = true);
+    try {
+      String? imagePath;
+      if (profileImage != null) {
+        final directory = await getApplicationSupportDirectory();
+        final extension = profileImage!.path.split('.').last.toLowerCase();
+        final savedImage = await profileImage!.copy(
+          '${directory.path}/profile_photo.${extension == 'png' ? 'png' : 'jpg'}',
+        );
+        imagePath = savedImage.path;
+      }
+      if (!mounted) return;
+      final controller = AppSettingsScope.of(context);
+      final today = DateTime.now();
+      final birthday = dateOfBirth;
+      final age = birthday == null
+          ? null
+          : today.year -
+                birthday.year -
+                ((today.month < birthday.month ||
+                        (today.month == birthday.month &&
+                            today.day < birthday.day))
+                    ? 1
+                    : 0);
+      await controller.update(
+        controller.settings.copyWith(
+          displayName: name,
+          profileSetupComplete: true,
+          dateOfBirth: birthday,
+          age: age,
+          gender: gender,
+          heightCm: height,
+          weightKg: weight,
+          healthGoals: List.of(goals),
+          profileImagePath: imagePath,
+        ),
+      );
+      if (!mounted) return;
+      final signedIn = await context.read<SessionCubit>().signIn();
+      if (!mounted) return;
+      if (!signedIn) throw StateError('Could not start the local session.');
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save your profile. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _finishing = false);
+    }
   }
 
   // ----------------------------------------------------------
@@ -123,10 +187,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                 });
               },
 
-              children: [
-                _buildFirstPage(size),
-                _buildSecondPage(size),
-              ],
+              children: [_buildFirstPage(size), _buildSecondPage(size)],
             ),
           ),
         ],
@@ -156,9 +217,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
       child: Column(
         children: [
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.025,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.025),
 
           Row(
             children: [
@@ -228,13 +287,9 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
               minHeight: 6,
 
-              backgroundColor:
-                  Colors.white.withValues(alpha: 0.25),
+              backgroundColor: Colors.white.withValues(alpha: 0.25),
 
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(
-                Appcolors.White,
-              ),
+              valueColor: const AlwaysStoppedAnimation<Color>(Appcolors.White),
             ),
           ),
         ],
@@ -248,12 +303,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
   Widget _buildFirstPage(Size size) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        28,
-        24,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,14 +334,22 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             ),
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.03,
+          const SizedBox(height: 24),
+          _buildSectionTitle(icon: Icons.person_outline, title: 'Name'),
+          const SizedBox(height: 10),
+          _buildInputField(
+            hint: 'Enter your name',
+            suffix: '',
+            icon: Icons.person_outline,
+            controller: nameController,
+            keyboardType: TextInputType.name,
           ),
+
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.03),
 
           // --------------------------------------------------
           // PROFILE PICTURE
           // --------------------------------------------------
-
           Center(
             child: Column(
               children: [
@@ -322,27 +380,18 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
                 Text(
                   'Add a photo so we can recognize you',
 
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 ),
               ],
             ),
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.04,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.04),
 
           // --------------------------------------------------
           // DATE OF BIRTH
           // --------------------------------------------------
-
-          _buildSectionTitle(
-            icon: Icons.cake_outlined,
-            title: 'Date of Birth',
-          ),
+          _buildSectionTitle(icon: Icons.cake_outlined, title: 'Date of Birth'),
 
           const SizedBox(height: 10),
 
@@ -356,14 +405,11 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             },
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.05,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
 
           // --------------------------------------------------
           // GENDER
           // --------------------------------------------------
-
           _buildSectionTitle(
             icon: Icons.person_outline_rounded,
             title: 'Gender',
@@ -381,9 +427,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             },
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.07,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.07),
 
           // Continue Button
           _buildNextButton(),
@@ -398,12 +442,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
   Widget _buildSecondPage(Size size) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        28,
-        24,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,18 +473,12 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             ),
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.04,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.04),
 
           // --------------------------------------------------
           // HEIGHT
           // --------------------------------------------------
-
-          _buildSectionTitle(
-            icon: Icons.height_rounded,
-            title: 'Height',
-          ),
+          _buildSectionTitle(icon: Icons.height_rounded, title: 'Height'),
 
           const SizedBox(height: 10),
 
@@ -456,14 +489,11 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             controller: heightController,
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.04,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.04),
 
           // --------------------------------------------------
           // WEIGHT
           // --------------------------------------------------
-
           _buildSectionTitle(
             icon: Icons.monitor_weight_outlined,
             title: 'Weight',
@@ -478,43 +508,29 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             controller: weightController,
           ),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.05,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.05),
 
           // --------------------------------------------------
           // HEALTH GOAL
           // --------------------------------------------------
-
-          _buildSectionTitle(
-            icon: Icons.flag_outlined,
-            title: 'Health Goal',
-          ),
+          _buildSectionTitle(icon: Icons.flag_outlined, title: 'Health Goal'),
 
           const SizedBox(height: 10),
 
           _buildGoalSelector(),
 
-          SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.15,
-          ),
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.15),
 
           // --------------------------------------------------
           // BUTTONS
           // --------------------------------------------------
-
           Row(
             children: [
-              Expanded(
-                child: _buildBackButton(),
-              ),
+              Expanded(child: _buildBackButton()),
 
               const SizedBox(width: 12),
 
-              Expanded(
-                flex: 2,
-                child: _buildFinishButton(),
-              ),
+              Expanded(flex: 2, child: _buildFinishButton()),
             ],
           ),
         ],
@@ -526,17 +542,10 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   // SECTION TITLE
   // ==========================================================
 
-  Widget _buildSectionTitle({
-    required IconData icon,
-    required String title,
-  }) {
+  Widget _buildSectionTitle({required IconData icon, required String title}) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Appcolors.Primary,
-        ),
+        Icon(icon, size: 20, color: Appcolors.Primary),
 
         const SizedBox(width: 8),
 
@@ -578,16 +587,9 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
       decoration: InputDecoration(
         hintText: hint,
 
-        hintStyle: TextStyle(
-          color: Colors.grey.shade400,
-          fontSize: 14,
-        ),
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
 
-        prefixIcon: Icon(
-          icon,
-          color: Colors.grey.shade500,
-          size: 21,
-        ),
+        prefixIcon: Icon(icon, color: Colors.grey.shade500, size: 21),
 
         suffixText: suffix,
 
@@ -609,26 +611,19 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
 
-          borderSide: BorderSide(
-            color: Colors.grey.shade200,
-          ),
+          borderSide: BorderSide(color: Colors.grey.shade200),
         ),
 
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
 
-          borderSide: BorderSide(
-            color: Colors.grey.shade200,
-          ),
+          borderSide: BorderSide(color: Colors.grey.shade200),
         ),
 
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
 
-          borderSide: const BorderSide(
-            color: Appcolors.Primary,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: Appcolors.Primary, width: 1.5),
         ),
       ),
     );
@@ -639,18 +634,11 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
   // ==========================================================
 
   Widget _buildGoalSelector() {
-    final goalOptions = [
-      'Stay Healthy',
-      'Lose Weight',
-      'Gain Weight',
-      'Build Muscle',
-    ];
-
     return Wrap(
       spacing: 10,
       runSpacing: 10,
 
-      children: goalOptions.map((item) {
+      children: HealthGoals.available.map((item) {
         final bool isSelected = goals.contains(item);
 
         return GestureDetector(
@@ -667,22 +655,15 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
 
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
 
             decoration: BoxDecoration(
-              color: isSelected
-                  ? Appcolors.Primary
-                  : Colors.grey.shade50,
+              color: isSelected ? Appcolors.Primary : Colors.grey.shade50,
 
               borderRadius: BorderRadius.circular(14),
 
               border: Border.all(
-                color: isSelected
-                    ? Appcolors.Primary
-                    : Colors.grey.shade200,
+                color: isSelected ? Appcolors.Primary : Colors.grey.shade200,
               ),
             ),
 
@@ -691,12 +672,10 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
 
               children: [
                 Text(
-                  item,
+                  HealthGoals.label(context, item),
 
                   style: TextStyle(
-                    color: isSelected
-                        ? Appcolors.White
-                        : Colors.grey.shade700,
+                    color: isSelected ? Appcolors.White : Colors.grey.shade700,
 
                     fontSize: 13,
 
@@ -750,18 +729,12 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             Text(
               'Continue',
 
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
 
             SizedBox(width: 8),
 
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 20,
-            ),
+            Icon(Icons.arrow_forward_rounded, size: 20),
           ],
         ),
       ),
@@ -782,9 +755,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
         style: OutlinedButton.styleFrom(
           foregroundColor: Appcolors.Primary,
 
-          side: BorderSide(
-            color: Appcolors.Primary.withValues(alpha: 0.5),
-          ),
+          side: BorderSide(color: Appcolors.Primary.withValues(alpha: 0.5)),
 
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -794,10 +765,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
         child: const Text(
           'Back',
 
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -812,7 +780,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
       height: 54,
 
       child: ElevatedButton(
-        onPressed: finishProfile,
+        onPressed: _finishing ? null : finishProfile,
 
         style: ElevatedButton.styleFrom(
           backgroundColor: Appcolors.Primary,
@@ -831,18 +799,12 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
             Text(
               'Finish',
 
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
 
             SizedBox(width: 8),
 
-            Icon(
-              Icons.check_rounded,
-              size: 20,
-            ),
+            Icon(Icons.check_rounded, size: 20),
           ],
         ),
       ),

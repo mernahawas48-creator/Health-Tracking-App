@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
@@ -7,6 +8,8 @@ import 'package:meditrack/core/utils/validators.dart';
 import 'package:meditrack/core/widgets/custom_text_form_field.dart';
 
 import 'package:meditrack/features/auth/widgets/authview.dart';
+import 'package:meditrack/features/auth/session_cubit.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,17 +20,27 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  Future<void> _continueAfterVerification() async {
+    if (!AppSettingsScope.of(context).settings.profileSetupComplete) {
+      Navigator.pushReplacementNamed(context, '/profileview');
+      return;
+    }
+    final signedIn = await context.read<SessionCubit>().signIn();
+    if (!mounted) return;
+    if (signedIn) {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+    } else {
+      _showErrorDialog(title: 'Login Error', message: 'Please try again.');
+    }
+  }
 
   final AuthService _authService = AuthService();
 
-  final TextEditingController emailController =
-      TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
-  final TextEditingController passwordController =
-      TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  final GlobalKey<FormState> _formKey =
-      GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
 
@@ -44,7 +57,6 @@ class _LoginPageState extends State<LoginPage> {
   // ==========================================================
 
   Future<void> _login() async {
-
     if (_isLoading) return;
 
     if (!_formKey.currentState!.validate()) {
@@ -58,17 +70,11 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      final email = emailController.text.trim();
 
-      final email =
-          emailController.text.trim();
+      final password = passwordController.text;
 
-      final password =
-          passwordController.text;
-
-      await _authService.login(
-        email: email,
-        password: password,
-      );
+      await _authService.login(email: email, password: password);
 
       if (!mounted) return;
 
@@ -78,28 +84,18 @@ class _LoginPageState extends State<LoginPage> {
 
       // Check email verification
 
-      final verified =
-          await _authService.isEmailVerified();
+      final verified = await _authService.isEmailVerified();
 
       if (!mounted) return;
 
       if (!verified) {
-
         _showVerificationDialog();
 
         return;
       }
 
-      // Temporary:
-      // Later we will check Firestore profile here.
-
-      Navigator.pushReplacementNamed(
-        context,
-        '/profileview',
-      );
-
+      await _continueAfterVerification();
     } on FirebaseAuthException catch (e) {
-
       if (!mounted) return;
 
       setState(() {
@@ -107,9 +103,7 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       _handleLoginError(e);
-
     } catch (e) {
-
       if (!mounted) return;
 
       setState(() {
@@ -129,20 +123,14 @@ class _LoginPageState extends State<LoginPage> {
   // LOGIN ERROR
   // ==========================================================
 
-  void _handleLoginError(
-    FirebaseAuthException e,
-  ) {
-
+  void _handleLoginError(FirebaseAuthException e) {
     switch (e.code) {
-
       case 'user-not-found':
-
         _showNoAccountDialog();
 
         break;
 
       case 'wrong-password':
-
         _showErrorDialog(
           title: 'Incorrect Password',
           message:
@@ -153,7 +141,6 @@ class _LoginPageState extends State<LoginPage> {
         break;
 
       case 'invalid-credential':
-
         _showErrorDialog(
           title: 'Incorrect Email or Password',
           message:
@@ -164,17 +151,14 @@ class _LoginPageState extends State<LoginPage> {
         break;
 
       case 'invalid-email':
-
         _showErrorDialog(
           title: 'Invalid Email',
-          message:
-              'Please enter a valid email address.',
+          message: 'Please enter a valid email address.',
         );
 
         break;
 
       case 'too-many-requests':
-
         _showErrorDialog(
           title: 'Too Many Attempts',
           message:
@@ -185,17 +169,14 @@ class _LoginPageState extends State<LoginPage> {
         break;
 
       case 'network-request-failed':
-
         _showErrorDialog(
           title: 'No Internet Connection',
-          message:
-              'Please check your internet connection.',
+          message: 'Please check your internet connection.',
         );
 
         break;
 
       case 'user-disabled':
-
         _showErrorDialog(
           title: 'Account Disabled',
           message:
@@ -206,7 +187,6 @@ class _LoginPageState extends State<LoginPage> {
         break;
 
       default:
-
         _showErrorDialog(
           title: 'Login Failed',
           message:
@@ -221,7 +201,6 @@ class _LoginPageState extends State<LoginPage> {
   // ==========================================================
 
   void _showNoAccountDialog() {
-
     AwesomeDialog(
       context: context,
 
@@ -238,17 +217,12 @@ class _LoginPageState extends State<LoginPage> {
       btnOkText: 'Sign Up',
 
       btnOkOnPress: () {
-
-        Navigator.pushReplacementNamed(
-          context,
-          '/signup',
-        );
+        Navigator.pushReplacementNamed(context, '/signup');
       },
 
       btnCancelText: 'Cancel',
 
       btnCancelOnPress: () {},
-
     ).show();
   }
 
@@ -257,14 +231,11 @@ class _LoginPageState extends State<LoginPage> {
   // ==========================================================
 
   void _showForgotPasswordDialog() {
-
-    final TextEditingController resetEmailController =
-        TextEditingController(
+    final TextEditingController resetEmailController = TextEditingController(
       text: emailController.text.trim(),
     );
 
-    final formKey =
-        GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     AwesomeDialog(
       context: context,
@@ -276,9 +247,7 @@ class _LoginPageState extends State<LoginPage> {
       title: 'Forgot Password?',
 
       body: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
 
         child: Form(
           key: formKey,
@@ -286,30 +255,21 @@ class _LoginPageState extends State<LoginPage> {
           child: TextFormField(
             controller: resetEmailController,
 
-            keyboardType:
-                TextInputType.emailAddress,
+            keyboardType: TextInputType.emailAddress,
 
-            decoration:
-                InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Email',
 
-              hintText:
-                  'Enter your email',
+              hintText: 'Enter your email',
 
-              prefixIcon:
-                  const Icon(
-                Icons.email_outlined,
-              ),
+              prefixIcon: const Icon(Icons.email_outlined),
 
-              border:
-                  OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(15),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
             ),
 
-            validator:
-                Validators.email,
+            validator: Validators.email,
           ),
         ),
       ),
@@ -317,14 +277,11 @@ class _LoginPageState extends State<LoginPage> {
       btnOkText: 'Send Reset Email',
 
       btnOkOnPress: () async {
-
         if (!formKey.currentState!.validate()) {
           return;
         }
 
-        await _sendPasswordReset(
-          resetEmailController.text.trim(),
-        );
+        await _sendPasswordReset(resetEmailController.text.trim());
 
         resetEmailController.dispose();
       },
@@ -334,7 +291,6 @@ class _LoginPageState extends State<LoginPage> {
       btnCancelOnPress: () {
         resetEmailController.dispose();
       },
-
     ).show();
   }
 
@@ -342,15 +298,9 @@ class _LoginPageState extends State<LoginPage> {
   // SEND PASSWORD RESET
   // ==========================================================
 
-  Future<void> _sendPasswordReset(
-    String email,
-  ) async {
-
+  Future<void> _sendPasswordReset(String email) async {
     try {
-
-      await _authService.sendPasswordResetEmail(
-        email: email,
-      );
+      await _authService.sendPasswordResetEmail(email: email);
 
       if (!mounted) return;
 
@@ -369,27 +319,18 @@ class _LoginPageState extends State<LoginPage> {
             'Please check your inbox and spam folder.',
 
         btnOkOnPress: () {},
-
       ).show();
-
     } on FirebaseAuthException catch (e) {
-
       if (!mounted) return;
 
       if (e.code == 'user-not-found') {
-
         _showNoAccountDialog();
-
       } else if (e.code == 'invalid-email') {
-
         _showErrorDialog(
           title: 'Invalid Email',
-          message:
-              'Please enter a valid email address.',
+          message: 'Please enter a valid email address.',
         );
-
       } else {
-
         _showErrorDialog(
           title: 'Could Not Send Email',
           message:
@@ -397,15 +338,12 @@ class _LoginPageState extends State<LoginPage> {
               'Please try again later.',
         );
       }
-
     } catch (e) {
-
       if (!mounted) return;
 
       _showErrorDialog(
         title: 'Something Went Wrong',
-        message:
-            'Please try again later.',
+        message: 'Please try again later.',
       );
     }
   }
@@ -415,7 +353,6 @@ class _LoginPageState extends State<LoginPage> {
   // ==========================================================
 
   void _showVerificationDialog() {
-
     AwesomeDialog(
       context: context,
 
@@ -425,17 +362,13 @@ class _LoginPageState extends State<LoginPage> {
 
       title: 'Email Not Verified',
 
-      desc:
-          'Please verify your email before logging in.',
+      desc: 'Please verify your email before logging in.',
 
       btnOkText: 'Resend Email',
 
       btnOkOnPress: () async {
-
         try {
-
-          await _authService
-              .sendVerificationEmail();
+          await _authService.sendVerificationEmail();
 
           if (!mounted) return;
 
@@ -446,21 +379,16 @@ class _LoginPageState extends State<LoginPage> {
 
             title: 'Email Sent',
 
-            desc:
-                'A new verification email has been sent.',
+            desc: 'A new verification email has been sent.',
 
             btnOkOnPress: () {},
-
           ).show();
-
         } catch (e) {
-
           if (!mounted) return;
 
           _showErrorDialog(
             title: 'Failed',
-            message:
-                'Could not resend verification email.',
+            message: 'Could not resend verification email.',
           );
         }
       },
@@ -468,7 +396,6 @@ class _LoginPageState extends State<LoginPage> {
       btnCancelText: 'Cancel',
 
       btnCancelOnPress: () {},
-
     ).show();
   }
 
@@ -476,11 +403,7 @@ class _LoginPageState extends State<LoginPage> {
   // ERROR DIALOG
   // ==========================================================
 
-  void _showErrorDialog({
-    required String title,
-    required String message,
-  }) {
-
+  void _showErrorDialog({required String title, required String message}) {
     AwesomeDialog(
       context: context,
 
@@ -495,7 +418,6 @@ class _LoginPageState extends State<LoginPage> {
       btnOkText: 'OK',
 
       btnOkOnPress: () {},
-
     ).show();
   }
 
@@ -505,7 +427,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-
     final size = MediaQuery.sizeOf(context);
 
     return AuthLayout(
@@ -514,22 +435,17 @@ class _LoginPageState extends State<LoginPage> {
 
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
 
             children: [
-
-              SizedBox(
-                height: size.height * 0.02,
-              ),
+              SizedBox(height: size.height * 0.02),
 
               const Text(
                 'Hey, Welcome back!',
 
                 style: TextStyle(
                   fontSize: 30,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                   color: Appcolors.Black,
                 ),
               ),
@@ -539,174 +455,126 @@ class _LoginPageState extends State<LoginPage> {
 
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                   color: Appcolors.Black,
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.05,
-              ),
+              SizedBox(height: size.height * 0.05),
 
               // EMAIL
-
               SizedBox(
                 width: size.width * 0.9,
 
                 child: CustomTextFormField(
-                  controller:
-                      emailController,
+                  controller: emailController,
 
                   LabelText: 'Email',
 
-                  hintText:
-                      'Enter your email',
+                  hintText: 'Enter your email',
 
-                  prefixIcon:
-                      Icons.email_outlined,
+                  prefixIcon: Icons.email_outlined,
 
-                  keyboardType:
-                      TextInputType.emailAddress,
+                  keyboardType: TextInputType.emailAddress,
 
-                  validator:
-                      Validators.email,
+                  validator: Validators.email,
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.03,
-              ),
+              SizedBox(height: size.height * 0.03),
 
               // PASSWORD
-
               SizedBox(
                 width: size.width * 0.9,
 
                 child: CustomTextFormField(
-                  controller:
-                      passwordController,
+                  controller: passwordController,
 
                   LabelText: 'Password',
 
-                  hintText:
-                      'Enter your password',
+                  hintText: 'Enter your password',
 
-                  prefixIcon:
-                      Icons.lock_outline,
+                  prefixIcon: Icons.lock_outline,
 
                   isPassword: true,
 
-                  validator:
-                      Validators.loginPassword,
+                  validator: Validators.loginPassword,
                 ),
               ),
 
               // FORGOT PASSWORD
-
               Align(
-                alignment:
-                    Alignment.centerRight,
+                alignment: Alignment.centerRight,
 
                 child: Padding(
-                  padding:
-                      EdgeInsets.only(
-                    right: size.width * 0.07,
-                  ),
+                  padding: EdgeInsets.only(right: size.width * 0.07),
 
                   child: TextButton(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : _showForgotPasswordDialog,
+                    onPressed: _isLoading ? null : _showForgotPasswordDialog,
 
                     child: const Text(
                       'Forgot Password?',
 
                       style: TextStyle(
-                        color:
-                            Appcolors.Primary,
+                        color: Appcolors.Primary,
 
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.01,
-              ),
+              SizedBox(height: size.height * 0.01),
 
               // LOGIN BUTTON
-
               SizedBox(
                 width: size.width * 0.55,
                 height: 55,
 
                 child: ElevatedButton(
-
-                  style:
-                      ElevatedButton.styleFrom(
-                    backgroundColor:
-                        Appcolors.Primary,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Appcolors.Primary,
 
                     elevation: 5,
 
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
                     ),
                   ),
 
-                  onPressed:
-                      _isLoading
-                          ? null
-                          : _login,
+                  onPressed: _isLoading ? null : _login,
 
                   child: _isLoading
-
                       ? const SizedBox(
                           width: 25,
                           height: 25,
 
-                          child:
-                              CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 3,
-                            color:
-                                Appcolors.White,
+                            color: Appcolors.White,
                           ),
                         )
-
                       : const Text(
                           'Log in',
 
                           style: TextStyle(
-                            color:
-                                Appcolors.White,
+                            color: Appcolors.White,
                             fontSize: 25,
-                            fontWeight:
-                                FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.05,
-              ),
+              SizedBox(height: size.height * 0.05),
 
               // OR
-
               Row(
                 children: [
-
                   const Expanded(
                     child: Divider(
-                      color:
-                          Appcolors.Grey1,
+                      color: Appcolors.Grey1,
 
                       thickness: 1.5,
 
@@ -715,27 +583,20 @@ class _LoginPageState extends State<LoginPage> {
                   ),
 
                   Padding(
-                    padding:
-                        EdgeInsets.symmetric(
-                      horizontal:
-                          size.width * 0.05,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.05,
                     ),
 
                     child: const Text(
                       'or continue with',
 
-                      style: TextStyle(
-                        fontSize: 14,
-                        color:
-                            Appcolors.Black2,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Appcolors.Black2),
                     ),
                   ),
 
                   const Expanded(
                     child: Divider(
-                      color:
-                          Appcolors.Grey1,
+                      color: Appcolors.Grey1,
 
                       thickness: 1.5,
 
@@ -745,12 +606,9 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
 
-              SizedBox(
-                height: size.height * 0.02,
-              ),
+              SizedBox(height: size.height * 0.02),
 
               // GOOGLE
-
               InkWell(
                 onTap: _isLoading
                     ? null
@@ -759,14 +617,30 @@ class _LoginPageState extends State<LoginPage> {
                         // سنضيفه بعد ما نخلص Email Auth.
                       },
 
-                borderRadius:
-                    BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(30),
 
                 child: Image.asset(
                   'assets/images/google-logo.png',
                   width: 50,
                   height: 50,
                 ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    "Don't have an account?",
+                    style: const TextStyle(color: Appcolors.Black),
+                  ),
+                  TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.pushNamed(context, '/signup'),
+                    child: const Text('Sign up'),
+                  ),
+                ],
               ),
             ],
           ),

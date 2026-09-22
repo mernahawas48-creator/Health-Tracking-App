@@ -3,32 +3,46 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WaterRepository {
-  static const _storageKey = 'water_today_v1';
+  static const _storageKey = 'water_records_v2';
+  static const _legacyKey = 'water_today_v1';
 
-  Future<int> loadToday() async {
+  Future<int> loadToday() => loadForDate(DateTime.now());
+
+  Future<int> loadForDate(DateTime date) async {
     final preferences = await SharedPreferences.getInstance();
-    final value = preferences.getString(_storageKey);
-    if (value == null) return 0;
+    final records = _records(preferences);
+    return (records[_dateKey(date)] as num?)?.toInt() ?? 0;
+  }
 
+  Future<void> saveToday(int waterMl) => saveForDate(DateTime.now(), waterMl);
+
+  Future<void> saveForDate(DateTime date, int waterMl) async {
+    final preferences = await SharedPreferences.getInstance();
+    final records = _records(preferences)..[_dateKey(date)] = waterMl;
+    await preferences.setString(_storageKey, jsonEncode(records));
+  }
+
+  Map<String, dynamic> _records(SharedPreferences preferences) {
+    Map<String, dynamic> records;
     try {
-      final record = jsonDecode(value) as Map<String, dynamic>;
-      if (record['date'] != _todayKey()) return 0;
-      return (record['waterMl'] as num?)?.toInt() ?? 0;
-    } on FormatException {
-      return 0;
+      records = Map<String, dynamic>.from(
+        jsonDecode(preferences.getString(_storageKey) ?? '{}') as Map,
+      );
+    } catch (_) {
+      records = {};
     }
+    try {
+      final legacy =
+          jsonDecode(preferences.getString(_legacyKey) ?? '{}') as Map;
+      final date = legacy['date'];
+      if (date is String && legacy['waterMl'] is num) {
+        records.putIfAbsent(date, () => legacy['waterMl']);
+      }
+    } catch (_) {
+      // A malformed legacy value does not block current-day tracking.
+    }
+    return records;
   }
 
-  Future<void> saveToday(int waterMl) async {
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(
-      _storageKey,
-      jsonEncode({'date': _todayKey(), 'waterMl': waterMl}),
-    );
-  }
-
-  String _todayKey() {
-    final today = DateTime.now();
-    return '${today.year}-${today.month}-${today.day}';
-  }
+  String _dateKey(DateTime date) => '${date.year}-${date.month}-${date.day}';
 }

@@ -25,9 +25,40 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int selectedIndex = 0;
-  String _userName = 'User Name';
+  DateTime _loadedDay = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    final now = DateTime.now();
+    if (now.year == _loadedDay.year &&
+        now.month == _loadedDay.month &&
+        now.day == _loadedDay.day) {
+      return;
+    }
+    _loadedDay = now;
+    context.read<MedicationCubit>().load();
+    context.read<NutritionCubit>().load();
+    context.read<WaterCubit>().load();
+    context.read<SleepCubit>().load();
+    setState(() {});
+  }
+
+  String get _userName => AppSettingsScope.of(context).settings.displayName;
   List<Medication> get _medications =>
       context.read<MedicationCubit>().state.medications;
   int get _waterMl => context.read<WaterCubit>().state.intakeMl;
@@ -72,7 +103,6 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _openNutrition() async {
     final settings = AppSettingsScope.of(context).settings;
-    _userName = settings.displayName;
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
@@ -85,12 +115,8 @@ class _HomePageState extends State<HomePage> {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
-        builder: (_) => ProfilePage(
-          initialName: _userName,
-          onNameChanged: (name) {
-            if (mounted) setState(() => _userName = name);
-          },
-        ),
+        builder: (_) =>
+            ProfilePage(initialName: _userName, onNameChanged: (_) {}),
       ),
     );
   }

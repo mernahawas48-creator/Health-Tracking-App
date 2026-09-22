@@ -1,7 +1,26 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  static Future<void>? _googleInitialization;
+
+  Future<UserCredential> signInWithGoogle() async {
+    final google = GoogleSignIn.instance;
+    try {
+      await (_googleInitialization ??= google.initialize());
+    } catch (_) {
+      _googleInitialization = null;
+      rethrow;
+    }
+    final account = await google.authenticate();
+    final idToken = account.authentication.idToken;
+    if (idToken == null)
+      throw StateError('Google did not provide an ID token.');
+    return _auth.signInWithCredential(
+      GoogleAuthProvider.credential(idToken: idToken),
+    );
+  }
 
   // ==========================================================
   // SIGN UP
@@ -59,12 +78,8 @@ class AuthService {
   // FORGOT PASSWORD
   // ==========================================================
 
-  Future<void> sendPasswordResetEmail({
-    required String email,
-  }) async {
-    await _auth.sendPasswordResetEmail(
-      email: email,
-    );
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   // ==========================================================
@@ -73,6 +88,13 @@ class AuthService {
 
   Future<void> logout() async {
     await _auth.signOut();
+    if (_googleInitialization != null) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Firebase is signed out even if the optional Google session expired.
+      }
+    }
   }
 
   // ==========================================================

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 import 'package:meditrack/core/services/auth_service.dart';
@@ -17,22 +18,44 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-
   final AuthService _authService = AuthService();
 
-  final TextEditingController emailController =
-      TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
-  final TextEditingController passwordController =
-      TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  final GlobalKey<FormState> _formKey =
-      GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
+
+  Future<void> _signUpWithGoogle() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await _authService.signInWithGoogle();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/profileview');
+    } on GoogleSignInException catch (error) {
+      if (error.code != GoogleSignInExceptionCode.canceled && mounted) {
+        _showErrorDialog(
+          title: 'Google sign up failed',
+          message: 'Please try again or use email signup.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        _showErrorDialog(
+          title: 'Google sign up failed',
+          message: 'Please try again or use email signup.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -48,7 +71,6 @@ class _SignupPageState extends State<SignupPage> {
   // ==========================================================
 
   Future<void> _signUp() async {
-
     if (_isLoading) return;
 
     if (!_formKey.currentState!.validate()) {
@@ -65,10 +87,7 @@ class _SignupPageState extends State<SignupPage> {
       final email = emailController.text.trim();
       final password = passwordController.text;
 
-      await _authService.signUp(
-        email: email,
-        password: password,
-      );
+      await _authService.signUp(email: email, password: password);
 
       await _authService.sendVerificationEmail();
 
@@ -79,9 +98,7 @@ class _SignupPageState extends State<SignupPage> {
       });
 
       _showVerificationDialog();
-
     } on FirebaseAuthException catch (e) {
-
       if (!mounted) return;
 
       setState(() {
@@ -89,9 +106,7 @@ class _SignupPageState extends State<SignupPage> {
       });
 
       _handleSignupError(e);
-
     } catch (e) {
-
       if (!mounted) return;
 
       setState(() {
@@ -111,40 +126,30 @@ class _SignupPageState extends State<SignupPage> {
   // SIGNUP ERROR
   // ==========================================================
 
-  void _handleSignupError(
-    FirebaseAuthException e,
-  ) {
-
+  void _handleSignupError(FirebaseAuthException e) {
     switch (e.code) {
-
       case 'email-already-in-use':
-
         _showEmailAlreadyExistsDialog();
 
         break;
 
       case 'invalid-email':
-
         _showErrorDialog(
           title: 'Invalid Email',
-          message:
-              'Please enter a valid email address.',
+          message: 'Please enter a valid email address.',
         );
 
         break;
 
       case 'weak-password':
-
         _showErrorDialog(
           title: 'Weak Password',
-          message:
-              'Please choose a stronger password.',
+          message: 'Please choose a stronger password.',
         );
 
         break;
 
       case 'network-request-failed':
-
         _showErrorDialog(
           title: 'No Internet Connection',
           message:
@@ -155,7 +160,6 @@ class _SignupPageState extends State<SignupPage> {
         break;
 
       case 'too-many-requests':
-
         _showErrorDialog(
           title: 'Too Many Attempts',
           message:
@@ -166,7 +170,6 @@ class _SignupPageState extends State<SignupPage> {
         break;
 
       default:
-
         _showErrorDialog(
           title: 'Sign Up Failed',
           message:
@@ -181,7 +184,6 @@ class _SignupPageState extends State<SignupPage> {
   // ==========================================================
 
   void _showEmailAlreadyExistsDialog() {
-
     AwesomeDialog(
       context: context,
 
@@ -198,17 +200,12 @@ class _SignupPageState extends State<SignupPage> {
       btnOkText: 'Log In',
 
       btnOkOnPress: () {
-
-        Navigator.pushReplacementNamed(
-          context,
-          '/login',
-        );
+        Navigator.pushReplacementNamed(context, '/login');
       },
 
       btnCancelText: 'Cancel',
 
       btnCancelOnPress: () {},
-
     ).show();
   }
 
@@ -217,7 +214,6 @@ class _SignupPageState extends State<SignupPage> {
   // ==========================================================
 
   void _showVerificationDialog() {
-
     AwesomeDialog(
       context: context,
 
@@ -246,7 +242,6 @@ class _SignupPageState extends State<SignupPage> {
       btnCancelOnPress: () {
         _resendVerificationEmail();
       },
-
     ).show();
   }
 
@@ -255,28 +250,17 @@ class _SignupPageState extends State<SignupPage> {
   // ==========================================================
 
   Future<void> _checkEmailVerification() async {
-
     try {
-
-      final verified =
-          await _authService.isEmailVerified();
+      final verified = await _authService.isEmailVerified();
 
       if (!mounted) return;
 
       if (verified) {
-
-        Navigator.pushReplacementNamed(
-          context,
-          '/profileview',
-        );
-
+        Navigator.pushReplacementNamed(context, '/profileview');
       } else {
-
         _showNotVerifiedDialog();
       }
-
     } catch (e) {
-
       if (!mounted) return;
 
       _showErrorDialog(
@@ -293,7 +277,6 @@ class _SignupPageState extends State<SignupPage> {
   // ==========================================================
 
   void _showNotVerifiedDialog() {
-
     AwesomeDialog(
       context: context,
 
@@ -318,7 +301,6 @@ class _SignupPageState extends State<SignupPage> {
       btnCancelOnPress: () {
         _resendVerificationEmail();
       },
-
     ).show();
   }
 
@@ -327,9 +309,7 @@ class _SignupPageState extends State<SignupPage> {
   // ==========================================================
 
   Future<void> _resendVerificationEmail() async {
-
     try {
-
       await _authService.sendVerificationEmail();
 
       if (!mounted) return;
@@ -343,15 +323,11 @@ class _SignupPageState extends State<SignupPage> {
 
         title: 'Email Sent',
 
-        desc:
-            'A new verification email has been sent.',
+        desc: 'A new verification email has been sent.',
 
         btnOkOnPress: () {},
-
       ).show();
-
     } catch (e) {
-
       if (!mounted) return;
 
       _showErrorDialog(
@@ -367,11 +343,7 @@ class _SignupPageState extends State<SignupPage> {
   // ERROR DIALOG
   // ==========================================================
 
-  void _showErrorDialog({
-    required String title,
-    required String message,
-  }) {
-
+  void _showErrorDialog({required String title, required String message}) {
     AwesomeDialog(
       context: context,
 
@@ -386,7 +358,6 @@ class _SignupPageState extends State<SignupPage> {
       btnOkText: 'OK',
 
       btnOkOnPress: () {},
-
     ).show();
   }
 
@@ -396,7 +367,6 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-
     final size = MediaQuery.sizeOf(context);
 
     return AuthLayout(
@@ -405,109 +375,89 @@ class _SignupPageState extends State<SignupPage> {
 
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
 
             children: [
-
-              SizedBox(
-                height: size.height * 0.04,
-              ),
+              SizedBox(height: size.height * 0.02),
 
               const Text(
                 'Create Your Account',
 
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
                   color: Appcolors.Black,
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.04,
+              const Text(
+                'Start your healthy journey!',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Appcolors.Black,
+                ),
               ),
 
-              // EMAIL
+              SizedBox(height: size.height * 0.04),
 
+              // EMAIL
               SizedBox(
                 width: size.width * 0.9,
 
                 child: CustomTextFormField(
-                  controller:
-                      emailController,
+                  controller: emailController,
 
                   LabelText: 'Email',
 
-                  hintText:
-                      'Enter your email',
+                  hintText: 'Enter your email',
 
-                  prefixIcon:
-                      Icons.email_outlined,
+                  prefixIcon: Icons.email_outlined,
 
-                  keyboardType:
-                      TextInputType.emailAddress,
+                  keyboardType: TextInputType.emailAddress,
 
-                  validator:
-                      Validators.email,
+                  validator: Validators.email,
                 ),
               ),
-
-              SizedBox(
-                height: size.height * 0.03,
-              ),
+              SizedBox(height: size.height * 0.03),
 
               // PASSWORD
-
               SizedBox(
                 width: size.width * 0.9,
 
                 child: CustomTextFormField(
-                  controller:
-                      passwordController,
+                  controller: passwordController,
 
                   LabelText: 'Password',
 
-                  hintText:
-                      'Enter your password',
+                  hintText: 'Enter your password',
 
-                  prefixIcon:
-                      Icons.lock_outline,
+                  prefixIcon: Icons.lock_outline,
 
                   isPassword: true,
 
-                  validator:
-                      Validators.password,
+                  validator: Validators.password,
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.03,
-              ),
+              SizedBox(height: size.height * 0.03),
 
               // CONFIRM PASSWORD
-
               SizedBox(
                 width: size.width * 0.9,
 
                 child: CustomTextFormField(
-                  controller:
-                      confirmPasswordController,
+                  controller: confirmPasswordController,
 
-                  LabelText:
-                      'Confirm Password',
+                  LabelText: 'Confirm Password',
 
-                  hintText:
-                      'Enter your password again',
+                  hintText: 'Enter your password again',
 
-                  prefixIcon:
-                      Icons.lock_outline,
+                  prefixIcon: Icons.lock_outline,
 
                   isPassword: true,
 
                   validator: (value) {
-
                     return Validators.confirmPassword(
                       value,
                       passwordController.text,
@@ -516,63 +466,102 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
 
-              SizedBox(
-                height: size.height * 0.04,
-              ),
+              SizedBox(height: size.height * 0.04),
 
               // SIGN UP BUTTON
-
               SizedBox(
                 width: size.width * 0.55,
                 height: 55,
 
                 child: ElevatedButton(
-
-                  style:
-                      ElevatedButton.styleFrom(
-                    backgroundColor:
-                        Appcolors.Primary,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Appcolors.Primary,
 
                     elevation: 5,
 
-                    shape:
-                        RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
                     ),
                   ),
 
-                  onPressed:
-                      _isLoading
-                          ? null
-                          : _signUp,
+                  onPressed: _isLoading ? null : _signUp,
 
                   child: _isLoading
-
                       ? const SizedBox(
                           width: 25,
                           height: 25,
 
-                          child:
-                              CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 3,
-                            color:
-                                Appcolors.White,
+                            color: Appcolors.White,
                           ),
                         )
-
                       : const Text(
                           'Sign up',
 
                           style: TextStyle(
-                            color:
-                                Appcolors.White,
+                            color: Appcolors.White,
                             fontSize: 25,
-                            fontWeight:
-                                FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),
+              ),
+              SizedBox(height: size.height * 0.05),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Divider(
+                      color: Appcolors.Grey1,
+                      thickness: 1.5,
+                      indent: 20,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.05,
+                    ),
+                    child: const Text(
+                      'or continue with',
+                      style: TextStyle(fontSize: 14, color: Appcolors.Black2),
+                    ),
+                  ),
+                  const Expanded(
+                    child: Divider(
+                      color: Appcolors.Grey1,
+                      thickness: 1.5,
+                      endIndent: 20,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: size.height * 0.02),
+              InkWell(
+                onTap: _isLoading ? null : _signUpWithGoogle,
+                borderRadius: BorderRadius.circular(30),
+                child: Image.asset(
+                  'assets/images/google-logo.png',
+                  width: 50,
+                  height: 50,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text(
+                    'Already have an account?',
+                    style: TextStyle(color: Appcolors.Black),
+                  ),
+                  TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () =>
+                              Navigator.pushReplacementNamed(context, '/login'),
+                    child: const Text('Log in'),
+                  ),
+                ],
               ),
             ],
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meditrack/core/di/injection.dart';
 import 'package:meditrack/features/auth/session_cubit.dart';
+import 'package:meditrack/core/services/auth_service.dart';
 import 'package:meditrack/features/medications/medication_cubit.dart';
 import 'package:meditrack/features/nutrition/nutrition_cubit.dart';
 import 'package:meditrack/features/water/water_cubit.dart';
@@ -14,10 +15,7 @@ import 'package:meditrack/themes/app_theme.dart';
 import 'routes.dart';
 
 class HealthApp extends StatelessWidget {
-  const HealthApp({
-    super.key,
-    required this.settingsController,
-  });
+  const HealthApp({super.key, required this.settingsController});
 
   final AppSettingsController settingsController;
 
@@ -26,20 +24,15 @@ class HealthApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => SessionCubit(getIt())..restore(),
+          create: (_) => SessionCubit(
+            getIt(),
+            signOutExistingAuth: () => AuthService().logout(),
+          )..restore(),
         ),
-        BlocProvider(
-          create: (_) => getIt<MedicationCubit>()..load(),
-        ),
-        BlocProvider(
-          create: (_) => getIt<NutritionCubit>()..load(),
-        ),
-        BlocProvider(
-          create: (_) => getIt<WaterCubit>()..load(),
-        ),
-        BlocProvider(
-          create: (_) => getIt<SleepCubit>()..load(),
-        ),
+        BlocProvider(create: (_) => getIt<MedicationCubit>()..load()),
+        BlocProvider(create: (_) => getIt<NutritionCubit>()..load()),
+        BlocProvider(create: (_) => getIt<WaterCubit>()..load()),
+        BlocProvider(create: (_) => getIt<SleepCubit>()..load()),
       ],
       child: AppSettingsScope(
         controller: settingsController,
@@ -50,14 +43,9 @@ class HealthApp extends StatelessWidget {
 
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              title: settings.isArabic
-                  ? 'متابعة الصحة'
-                  : 'Health Tracker',
+              title: settings.isArabic ? 'متابعة الصحة' : 'Health Tracker',
               locale: Locale(settings.languageCode),
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ar'),
-              ],
+              supportedLocales: const [Locale('en'), Locale('ar')],
               localizationsDelegates: const [
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,

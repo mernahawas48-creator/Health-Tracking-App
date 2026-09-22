@@ -9,14 +9,14 @@ class ProfileStepLayout extends StatelessWidget {
   final int totalSteps;
   final VoidCallback onNext;
   const ProfileStepLayout({
-    super.key, 
-    required this.child, 
-    required this.title, 
-    required this.subtitle, 
-    required this.currentStep, 
-    required this.totalSteps, 
-    required this.onNext
-    });
+    super.key,
+    required this.child,
+    required this.title,
+    required this.subtitle,
+    required this.currentStep,
+    required this.totalSteps,
+    required this.onNext,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,27 +24,18 @@ class ProfileStepLayout extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child:Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title
-            ),
-            Text(
-              subtitle
-            ),
-            SizedBox(height: MediaQuery.sizeOf(context).height * 0.02,),
-            Expanded(
-              child: child
-              ),
-              ElevatedButton(
-                onPressed: onNext, 
-                child: const Text('Next'))
-          ],
-        )
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title),
+              Text(subtitle),
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.02),
+              Expanded(child: child),
+              ElevatedButton(onPressed: onNext, child: const Text('Next')),
+            ],
           ),
-          
         ),
+      ),
     );
   }
 }
