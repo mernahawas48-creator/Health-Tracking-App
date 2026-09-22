@@ -54,25 +54,22 @@ class SessionCubit extends Cubit<SessionStatus> {
 
   Future<void> restore() async {
     emit(SessionStatus.loading);
+
     try {
-      final onboarded = await _session.hasCompletedOnboarding();
-      if (!onboarded) {
-        emit(SessionStatus.onboarding);
-        return;
-      }
       final uid = _currentUid();
-      if (uid == null || !(_canUseAccount?.call() ?? true)) {
-        _activeUid = null;
-        _settings.clearAccount();
+
+      // No Firebase authenticated user
+      if (uid == null || uid.isEmpty) {
         emit(SessionStatus.signedOut);
         return;
       }
-      final configured = await prepareAccount();
-      if (configured == null) return;
-      _activeUid = uid;
-      emit(configured ? SessionStatus.signedIn : SessionStatus.profileSetup);
-    } catch (_) {
-      emit(SessionStatus.failure);
+
+      // Firebase user exists -> open the app
+      emit(SessionStatus.signedIn);
+    } catch (e) {
+      // Authentication/session failure should not leave the app
+      // stuck on the Retry screen.
+      emit(SessionStatus.signedOut);
     }
   }
 
