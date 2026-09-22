@@ -57,7 +57,6 @@ class DefaultFirebaseOptions {
     projectId: 'meditrack-49903',
     storageBucket: 'meditrack-49903.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAFOWqpqwUzBiVmooW--B2fI57eLpNbnNM',
     appId: '1:227105226409:ios:a5af2a9d87c82dde75b3b8',
