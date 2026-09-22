@@ -1,6 +1,10 @@
+import 'package:meditrack/themes/app_theme.dart';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meditrack/features/auth/session_cubit.dart';
 import 'package:meditrack/features/settings_page.dart';
 import 'package:meditrack/features/reports_page.dart';
 import 'package:meditrack/features/help_page.dart';
@@ -62,14 +66,13 @@ class _ProfilePageState extends State<ProfilePage> {
     final result = await Navigator.push<_ProfileEditResult>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            _EditProfilePage(
-              initialGoals: settingsController.settings.healthGoals,
-              initialAge: settingsController.settings.age,
-              initialGender: settingsController.settings.gender,
-              initialHeightCm: settingsController.settings.heightCm,
-              initialWeightKg: settingsController.settings.weightKg,
-            ),
+        builder: (_) => _EditProfilePage(
+          initialGoals: settingsController.settings.healthGoals,
+          initialAge: settingsController.settings.age,
+          initialGender: settingsController.settings.gender,
+          initialHeightCm: settingsController.settings.heightCm,
+          initialWeightKg: settingsController.settings.weightKg,
+        ),
       ),
     );
 
@@ -85,23 +88,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(content: Text('$feature ${AppStrings.of(context).text('comingSoon')}')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     final settingsController = AppSettingsScope.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -145,15 +140,28 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _SettingsTile(
                   icon: Icons.insights_outlined,
-                  title: settingsController.settings.isArabic ? 'التقارير والسلاسل' : 'Reports and streaks',
-                  subtitle: settingsController.settings.isArabic ? 'ملخص صحتك الأسبوعي' : 'Your weekly health summary',
-                  onTap: () => Navigator.push<void>(context, MaterialPageRoute(builder: (_) => ReportsPage(medications: const [], settings: settingsController.settings))),
+                  title: settingsController.settings.isArabic
+                      ? 'التقارير والسلاسل'
+                      : 'Reports and streaks',
+                  subtitle: settingsController.settings.isArabic
+                      ? 'ملخص صحتك الأسبوعي'
+                      : 'Your weekly health summary',
+                  onTap: () => Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReportsPage(
+                        medications: const [],
+                        settings: settingsController.settings,
+                      ),
+                    ),
+                  ),
                 ),
                 _SettingsDivider(),
                 _SettingsTile(
                   icon: Icons.person_outline_rounded,
                   title: strings.text('personalDetails'),
-                  subtitle: '${strings.text('age')}, ${strings.text('gender')}, '
+                  subtitle:
+                      '${strings.text('age')}, ${strings.text('gender')}, '
                       '${strings.text('height')} & ${strings.text('weight')}',
                   onTap: _openHealthDetails,
                 ),
@@ -190,24 +198,36 @@ class _ProfilePageState extends State<ProfilePage> {
                 _SettingsTile(
                   icon: Icons.help_outline_rounded,
                   title: strings.text('helpSupport'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HelpPage()),
+                  ),
                 ),
                 _SettingsDivider(),
                 _SettingsTile(
                   icon: Icons.privacy_tip_outlined,
                   title: strings.text('privacy'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPage())),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrivacyPage()),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
-              onPressed: () => _showComingSoon(strings.text('signOut')),
-              icon: const Icon(Icons.logout_rounded),
+              onPressed: () async {
+                final success = await context.read<SessionCubit>().signOut();
+                if (success && context.mounted) {
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/login', (_) => false);
+                }
+              },
+              icon: Icon(Icons.logout_rounded),
               label: Text(strings.text('signOut')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Appcolors.SecondaryOrange,
-                side: const BorderSide(color: Appcolors.SecondaryOrange),
+                side: BorderSide(color: Appcolors.SecondaryOrange),
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -218,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Center(
               child: Text(
                 strings.text('healthTrackingApp'),
-                style: const TextStyle(color: Appcolors.Grey2, fontSize: 12),
+                style: TextStyle(color: context.appSecondaryText, fontSize: 12),
               ),
             ),
           ],
@@ -252,14 +272,14 @@ class _ProfileHeader extends StatelessWidget {
           Container(
             width: 68,
             height: 68,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: Color(0xffE8DFFF),
               shape: BoxShape.circle,
             ),
             clipBehavior: Clip.antiAlias,
             child: imagePath != null && File(imagePath!).existsSync()
                 ? Image.file(File(imagePath!), fit: BoxFit.cover)
-                : const Icon(
+                : Icon(
                     Icons.person_rounded,
                     color: Color(0xff5C42A5),
                     size: 38,
@@ -273,8 +293,8 @@ class _ProfileHeader extends StatelessWidget {
                 Text(
                   name,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Appcolors.White,
+                  style: TextStyle(
+                    color: context.appOnPrimary,
                     fontSize: 21,
                     fontWeight: FontWeight.bold,
                   ),
@@ -282,14 +302,14 @@ class _ProfileHeader extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   AppStrings.of(context).text('wellnessJourney'),
-                  style: const TextStyle(color: Color(0xffD8F6F7)),
+                  style: TextStyle(color: Color(0xffD8F6F7)),
                 ),
               ],
             ),
           ),
           IconButton(
             onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined, color: Appcolors.White),
+            icon: Icon(Icons.edit_outlined, color: context.appOnPrimary),
             tooltip: AppStrings.of(context).text('editProfile'),
           ),
         ],
@@ -316,8 +336,8 @@ class _HealthPlanCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Appcolors.White,
-        border: Border.all(color: Appcolors.Grey3),
+        color: context.appSurface,
+        border: Border.all(color: context.appOutline),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -328,13 +348,10 @@ class _HealthPlanCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xffE3F7F8),
+                  color: context.appMutedSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.flag_outlined,
-                  color: Appcolors.Primary,
-                ),
+                child: Icon(Icons.flag_outlined, color: Appcolors.Primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -343,13 +360,16 @@ class _HealthPlanCard extends StatelessWidget {
                   children: [
                     Text(
                       AppStrings.of(context).text('healthFocus'),
-                      style: const TextStyle(color: Appcolors.Grey2, fontSize: 13),
+                      style: TextStyle(
+                        color: context.appSecondaryText,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
                       goals.isEmpty
                           ? AppStrings.of(context).text('noGoalsSelected')
                           : _focusMessage(context, goals.first),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -366,13 +386,13 @@ class _HealthPlanCard extends StatelessWidget {
                 children: goals
                     .map(
                       (goal) => Chip(
-                        avatar: const Icon(
+                        avatar: Icon(
                           Icons.check_circle_outline_rounded,
                           size: 16,
                           color: Appcolors.Primary,
                         ),
                         label: Text(_localizedGoal(context, goal)),
-                        backgroundColor: const Color(0xffE3F7F8),
+                        backgroundColor: context.appMutedSurface,
                         side: BorderSide.none,
                       ),
                     )
@@ -424,7 +444,7 @@ class _GoalValue extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             color: Appcolors.Primary,
             fontWeight: FontWeight.bold,
@@ -434,7 +454,7 @@ class _GoalValue extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Appcolors.Grey2, fontSize: 12),
+          style: TextStyle(color: context.appSecondaryText, fontSize: 12),
         ),
       ],
     );
@@ -450,11 +470,14 @@ class _SettingsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Appcolors.White,
-        border: Border.all(color: Appcolors.Grey3),
+        color: context.appSurface,
+        border: Border.all(color: context.appOutline),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(children: children),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(children: children),
+      ),
     );
   }
 }
@@ -488,11 +511,14 @@ class _SettingsTile extends StatelessWidget {
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: _SettingIcon(icon: icon),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600)),
       subtitle: subtitle == null
           ? null
-          : Text(subtitle!, style: const TextStyle(color: Appcolors.Grey2)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Appcolors.Grey2),
+          : Text(subtitle!, style: TextStyle(color: context.appSecondaryText)),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: context.appSecondaryText,
+      ),
     );
   }
 }
@@ -510,13 +536,13 @@ class _NotificationTile extends StatelessWidget {
       leading: const _SettingIcon(icon: Icons.notifications_none_rounded),
       title: Text(
         AppStrings.of(context).text('notifications'),
-        style: const TextStyle(fontWeight: FontWeight.w600),
+        style: TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
         enabled
             ? AppStrings.of(context).text('notificationDescription')
             : AppStrings.of(context).text('notificationsOff'),
-        style: const TextStyle(color: Appcolors.Grey2),
+        style: TextStyle(color: context.appSecondaryText),
       ),
       trailing: Switch(
         value: enabled,
@@ -538,7 +564,7 @@ class _SettingIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xffE3F7F8),
+        color: context.appMutedSurface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(icon, color: Appcolors.Primary),
@@ -616,7 +642,7 @@ class _EditIdentityPageState extends State<_EditIdentityPage> {
   Future<void> _showImageSourcePicker() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Appcolors.White,
+      backgroundColor: context.appSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -628,16 +654,22 @@ class _EditIdentityPageState extends State<_EditIdentityPage> {
             children: [
               Text(
                 AppStrings.of(context).text('profilePhoto'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(Icons.camera_alt_outlined, color: Appcolors.Primary),
+                leading: Icon(
+                  Icons.camera_alt_outlined,
+                  color: Appcolors.Primary,
+                ),
                 title: Text(AppStrings.of(context).text('takePhoto')),
                 onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: Appcolors.Primary),
+                leading: Icon(
+                  Icons.photo_library_outlined,
+                  color: Appcolors.Primary,
+                ),
                 title: Text(AppStrings.of(context).text('chooseFromGallery')),
                 onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
               ),
@@ -665,102 +697,111 @@ class _EditIdentityPageState extends State<_EditIdentityPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xffF9F7FB),
+    backgroundColor: context.appCanvas,
     appBar: AppBar(
-      backgroundColor: Appcolors.White,
-      foregroundColor: Appcolors.Black,
+      backgroundColor: context.appSurface,
+      foregroundColor: context.appText,
       elevation: 0,
       title: Text(
         AppStrings.of(context).text('editProfile'),
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(fontWeight: FontWeight.bold),
       ),
     ),
     body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            InkWell(
-              onTap: _showImageSourcePicker,
-              borderRadius: BorderRadius.circular(56),
-              child: Stack(
-                clipBehavior: Clip.none,
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 52,
-                    backgroundColor: const Color(0xffE3F7F8),
-                    backgroundImage:
-                        _profileImagePath != null &&
-                            File(_profileImagePath!).existsSync()
-                        ? FileImage(File(_profileImagePath!))
-                        : null,
-                    child: _profileImagePath == null ||
-                            !File(_profileImagePath!).existsSync()
-                        ? const Icon(
-                            Icons.person_rounded,
-                            size: 54,
-                            color: Appcolors.Primary,
-                          )
-                        : null,
+                  InkWell(
+                    onTap: _showImageSourcePicker,
+                    borderRadius: BorderRadius.circular(56),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        CircleAvatar(
+                          radius: 52,
+                          backgroundColor: context.appMutedSurface,
+                          backgroundImage:
+                              _profileImagePath != null &&
+                                  File(_profileImagePath!).existsSync()
+                              ? FileImage(File(_profileImagePath!))
+                              : null,
+                          child:
+                              _profileImagePath == null ||
+                                  !File(_profileImagePath!).existsSync()
+                              ? Icon(
+                                  Icons.person_rounded,
+                                  size: 54,
+                                  color: Appcolors.Primary,
+                                )
+                              : null,
+                        ),
+                        PositionedDirectional(
+                          end: -2,
+                          bottom: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Appcolors.Primary,
+                            ),
+                            child: Icon(
+                              Icons.camera_alt_outlined,
+                              color: context.appOnPrimary,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  PositionedDirectional(
-                    end: -2,
-                    bottom: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Appcolors.Primary,
+                  const SizedBox(height: 12),
+                  Text(
+                    AppStrings.of(context).text('yourName'),
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _nameController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      hintText: AppStrings.of(context).text('enterName'),
+                      filled: true,
+                      fillColor: context.appSurface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: context.appOutline),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt_outlined,
-                        color: Appcolors.White,
-                        size: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Appcolors.Primary,
+                        foregroundColor: context.appOnPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        AppStrings.of(context).text('saveChanges'),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              AppStrings.of(context).text('yourName'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: AppStrings.of(context).text('enterName'),
-                filled: true,
-                fillColor: Appcolors.White,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Appcolors.Grey3),
-                ),
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Appcolors.Primary,
-                  foregroundColor: Appcolors.White,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  AppStrings.of(context).text('saveChanges'),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     ),
@@ -804,7 +845,9 @@ class _EditProfilePageState extends State<_EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _ageController = TextEditingController(text: widget.initialAge?.toString() ?? '');
+    _ageController = TextEditingController(
+      text: widget.initialAge?.toString() ?? '',
+    );
     _heightController = TextEditingController(
       text: widget.initialHeightCm?.toStringAsFixed(0) ?? '',
     );
@@ -838,7 +881,9 @@ class _EditProfilePageState extends State<_EditProfilePage> {
         weightKg < 15 ||
         weightKg > 400) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(context).text('invalidPersonalInfo'))),
+        SnackBar(
+          content: Text(AppStrings.of(context).text('invalidPersonalInfo')),
+        ),
       );
       return;
     }
@@ -857,14 +902,14 @@ class _EditProfilePageState extends State<_EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         title: Text(
           AppStrings.of(context).text('personalDetails'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: SafeArea(
@@ -874,109 +919,109 @@ class _EditProfilePageState extends State<_EditProfilePage> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppStrings.of(context).text('personalInformation'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _PersonalField(
-              controller: _ageController,
-              label: AppStrings.of(context).text('age'),
-              suffix: AppStrings.of(context).text('years'),
-              icon: Icons.cake_outlined,
-              decimal: false,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(
-                  Icons.person_outline_rounded,
-                  color: Appcolors.Primary,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.of(context).text('personalInformation'),
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    _PersonalField(
+                      controller: _ageController,
+                      label: AppStrings.of(context).text('age'),
+                      suffix: AppStrings.of(context).text('years'),
+                      icon: Icons.cake_outlined,
+                      decimal: false,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline_rounded,
+                          color: Appcolors.Primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppStrings.of(context).text('gender'),
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _GenderChoice(
+                          label: AppStrings.of(context).text('female'),
+                          selected: _gender == 'female',
+                          onSelected: () => setState(() => _gender = 'female'),
+                        ),
+                        _GenderChoice(
+                          label: AppStrings.of(context).text('male'),
+                          selected: _gender == 'male',
+                          onSelected: () => setState(() => _gender = 'male'),
+                        ),
+                        _GenderChoice(
+                          label: AppStrings.of(context).text('preferNotToSay'),
+                          selected: _gender == 'preferNotToSay',
+                          onSelected: () =>
+                              setState(() => _gender = 'preferNotToSay'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _PersonalField(
+                            controller: _heightController,
+                            label: AppStrings.of(context).text('height'),
+                            suffix: AppStrings.of(context).text('cm'),
+                            icon: Icons.height_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _PersonalField(
+                            controller: _weightController,
+                            label: AppStrings.of(context).text('weight'),
+                            suffix: AppStrings.of(context).text('kg'),
+                            icon: Icons.monitor_weight_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      AppStrings.of(context).text('chooseGoals'),
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      AppStrings.of(context).text('goalHint'),
+                      style: TextStyle(color: context.appSecondaryText),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._goals.map(
+                      (goal) => CheckboxListTile(
+                        value: _selectedGoals.contains(goal),
+                        activeColor: Appcolors.Primary,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(_localizedGoal(context, goal)),
+                        onChanged: (selected) {
+                          setState(() {
+                            if (selected ?? false) {
+                              _selectedGoals.add(goal);
+                            } else {
+                              _selectedGoals.remove(goal);
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  AppStrings.of(context).text('gender'),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _GenderChoice(
-                  label: AppStrings.of(context).text('female'),
-                  selected: _gender == 'female',
-                  onSelected: () => setState(() => _gender = 'female'),
-                ),
-                _GenderChoice(
-                  label: AppStrings.of(context).text('male'),
-                  selected: _gender == 'male',
-                  onSelected: () => setState(() => _gender = 'male'),
-                ),
-                _GenderChoice(
-                  label: AppStrings.of(context).text('preferNotToSay'),
-                  selected: _gender == 'preferNotToSay',
-                  onSelected: () =>
-                      setState(() => _gender = 'preferNotToSay'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _PersonalField(
-                    controller: _heightController,
-                    label: AppStrings.of(context).text('height'),
-                    suffix: AppStrings.of(context).text('cm'),
-                    icon: Icons.height_rounded,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _PersonalField(
-                    controller: _weightController,
-                    label: AppStrings.of(context).text('weight'),
-                    suffix: AppStrings.of(context).text('kg'),
-                    icon: Icons.monitor_weight_outlined,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              AppStrings.of(context).text('chooseGoals'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              AppStrings.of(context).text('goalHint'),
-              style: const TextStyle(color: Appcolors.Grey2),
-            ),
-            const SizedBox(height: 8),
-            ..._goals.map(
-              (goal) => CheckboxListTile(
-                value: _selectedGoals.contains(goal),
-                activeColor: Appcolors.Primary,
-                contentPadding: EdgeInsets.zero,
-                title: Text(_localizedGoal(context, goal)),
-                onChanged: (selected) {
-                  setState(() {
-                    if (selected ?? false) {
-                      _selectedGoals.add(goal);
-                    } else {
-                      _selectedGoals.remove(goal);
-                    }
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
               ),
             ),
             Padding(
@@ -988,17 +1033,14 @@ class _EditProfilePageState extends State<_EditProfilePage> {
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Appcolors.Primary,
-                    foregroundColor: Appcolors.White,
+                    foregroundColor: context.appOnPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(
                     AppStrings.of(context).text('saveChanges'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -1027,12 +1069,10 @@ class _GenderChoice extends StatelessWidget {
     selected: selected,
     onSelected: (_) => onSelected(),
     selectedColor: Appcolors.Primary,
-    backgroundColor: Appcolors.White,
-    side: BorderSide(
-      color: selected ? Appcolors.Primary : Appcolors.Grey3,
-    ),
+    backgroundColor: context.appSurface,
+    side: BorderSide(color: selected ? Appcolors.Primary : context.appOutline),
     labelStyle: TextStyle(
-      color: selected ? Appcolors.White : Appcolors.Black,
+      color: selected ? context.appOnPrimary : context.appText,
       fontWeight: FontWeight.w600,
     ),
   );
@@ -1062,10 +1102,10 @@ class _PersonalField extends StatelessWidget {
       suffixText: suffix,
       prefixIcon: Icon(icon, color: Appcolors.Primary),
       filled: true,
-      fillColor: Appcolors.White,
+      fillColor: context.appSurface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Appcolors.Grey3),
+        borderSide: BorderSide(color: context.appOutline),
       ),
     ),
   );

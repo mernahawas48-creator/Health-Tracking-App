@@ -1,8 +1,10 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meditrack/features/auth/session_cubit.dart';
 import 'package:meditrack/features/onboarding_view.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
-import 'package:meditrack/services/local_session_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -23,8 +25,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _finishOnboarding() async {
-    await LocalSessionService.completeOnboarding();
-    if (mounted) Navigator.pushReplacementNamed(context, '/signup');
+    final success = await context.read<SessionCubit>().completeOnboarding();
+    if (success && mounted) Navigator.pushReplacementNamed(context, '/signup');
   }
 
   @override
@@ -33,7 +35,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final settingsController = AppSettingsScope.of(context);
 
     return Scaffold(
-      backgroundColor: Appcolors.White,
+      backgroundColor: context.appSurface,
       body: SafeArea(
         child: Column(
           children: [
@@ -49,11 +51,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ],
                 child: Padding(
                   padding: const EdgeInsetsDirectional.only(top: 12, end: 20),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.language_rounded, color: Appcolors.Primary),
-                    const SizedBox(width: 6),
-                    Text(strings.isArabic ? 'العربية' : 'English', style: const TextStyle(color: Appcolors.Primary, fontWeight: FontWeight.bold)),
-                  ]),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.language_rounded, color: Appcolors.Primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        strings.isArabic ? 'العربية' : 'English',
+                        style: TextStyle(
+                          color: Appcolors.Primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -88,7 +99,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     onPressed: _finishOnboarding,
                     child: Text(
                       strings.text('skip'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Appcolors.Primary,
@@ -106,7 +117,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? Appcolors.Primary
-                              : Appcolors.Grey2,
+                              : context.appSecondaryText,
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -116,7 +127,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Appcolors.Primary,
-                      foregroundColor: Appcolors.White,
+                      foregroundColor: context.appOnPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 11,
@@ -139,7 +150,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       _currentPage == 2
                           ? strings.text('getStarted')
                           : strings.text('next'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),

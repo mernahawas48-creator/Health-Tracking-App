@@ -1,9 +1,11 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meditrack/features/auth/session_cubit.dart';
 import 'package:meditrack/features/authview.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/features/custom_text_form_field.dart';
 import 'package:meditrack/l10n/app_strings.dart';
-import 'package:meditrack/services/local_session_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -31,7 +33,7 @@ class _SignupPage extends State<SignupPage> {
               ),
               child: Text(
                 strings.text('signupTitle'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: Appcolors.Primary,
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.bold,
@@ -123,14 +125,15 @@ class _SignupPage extends State<SignupPage> {
               ),
               onPressed: () async {
                 if (!(_formKey.currentState?.validate() ?? false)) return;
-                await LocalSessionService.signIn();
-                if (context.mounted)
+                final success = await context.read<SessionCubit>().signIn();
+                if (success && context.mounted) {
                   Navigator.pushReplacementNamed(context, '/home');
+                }
               },
               child: Text(
                 strings.text('signUp'),
                 style: TextStyle(
-                  color: Appcolors.White,
+                  color: context.appOnPrimary,
                   fontSize: 25,
                   fontWeight: FontWeight.bold,
                 ),
@@ -141,7 +144,7 @@ class _SignupPage extends State<SignupPage> {
               children: [
                 Expanded(
                   child: Divider(
-                    color: Appcolors.Grey1,
+                    color: context.appSecondaryText,
                     thickness: 1.5,
                     indent: 20,
                   ),
@@ -152,13 +155,13 @@ class _SignupPage extends State<SignupPage> {
                   ),
                   child: Text(
                     strings.text('orContinue'),
-                    style: TextStyle(fontSize: 14, color: Appcolors.Black2),
+                    style: TextStyle(fontSize: 14, color: context.appText),
                   ),
                 ),
 
                 Expanded(
                   child: Divider(
-                    color: Appcolors.Grey1,
+                    color: context.appSecondaryText,
                     thickness: 1.5,
                     endIndent: 20,
                   ),

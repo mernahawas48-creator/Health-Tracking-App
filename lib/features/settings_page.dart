@@ -1,3 +1,4 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 import 'package:meditrack/models/app_settings.dart';
@@ -25,15 +26,15 @@ class SettingsPage extends StatelessWidget {
         final settings = controller.settings;
         final s = AppStrings.of(context);
         return Scaffold(
-          backgroundColor: const Color(0xffF9F7FB),
+          backgroundColor: context.appCanvas,
           appBar: AppBar(
-            backgroundColor: Appcolors.White,
-            foregroundColor: Appcolors.Black,
+            backgroundColor: context.appSurface,
+            foregroundColor: context.appText,
             elevation: 0,
             centerTitle: true,
             title: Text(
               s.text('settings'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           body: ListView(
@@ -56,27 +57,74 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              Text(settings.isArabic ? 'التذكيرات اليومية' : 'Daily reminders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                settings.isArabic ? 'التذكيرات اليومية' : 'Daily reminders',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
-              _SettingsCard(children: [
-                SwitchListTile(
-                  secondary: const Icon(Icons.water_drop_outlined, color: Appcolors.Primary),
-                  title: Text(settings.isArabic ? 'تذكير الماء' : 'Water reminder'),
-                  subtitle: Text(settings.isArabic ? 'يوميًا ${settings.waterReminderHour.toString().padLeft(2, '0')}:00' : '${settings.waterReminderHour.toString().padLeft(2, '0')}:00 daily'),
-                  value: settings.waterReminderEnabled,
-                  activeThumbColor: Appcolors.Primary,
-                  onChanged: (value) async { await controller.update(settings.copyWith(waterReminderEnabled: value)); await MedicationNotificationService.instance.setDailyWellnessReminder(id: MedicationNotificationService.waterReminderId,title:'Water reminder',body:'Time for a glass of water.',enabled:value,hour:settings.waterReminderHour); },
-                ),
-                const Divider(height: 1, indent: 68),
-                SwitchListTile(
-                  secondary: const Icon(Icons.bedtime_outlined, color: Appcolors.Primary),
-                  title: Text(settings.isArabic ? 'تذكير النوم' : 'Sleep reminder'),
-                  subtitle: Text(settings.isArabic ? 'يوميًا ${settings.sleepReminderHour.toString().padLeft(2, '0')}:00' : '${settings.sleepReminderHour.toString().padLeft(2, '0')}:00 daily'),
-                  value: settings.sleepReminderEnabled,
-                  activeThumbColor: Appcolors.Primary,
-                  onChanged: (value) async { await controller.update(settings.copyWith(sleepReminderEnabled: value)); await MedicationNotificationService.instance.setDailyWellnessReminder(id: MedicationNotificationService.sleepReminderId,title:'Sleep reminder',body:'Start your wind-down routine.',enabled:value,hour:settings.sleepReminderHour); },
-                ),
-              ]),
+              _SettingsCard(
+                children: [
+                  SwitchListTile(
+                    secondary: Icon(
+                      Icons.water_drop_outlined,
+                      color: Appcolors.Primary,
+                    ),
+                    title: Text(
+                      settings.isArabic ? 'تذكير الماء' : 'Water reminder',
+                    ),
+                    subtitle: Text(
+                      settings.isArabic
+                          ? 'يوميًا ${settings.waterReminderHour.toString().padLeft(2, '0')}:00'
+                          : '${settings.waterReminderHour.toString().padLeft(2, '0')}:00 daily',
+                    ),
+                    value: settings.waterReminderEnabled,
+                    activeThumbColor: Appcolors.Primary,
+                    onChanged: (value) async {
+                      await controller.update(
+                        settings.copyWith(waterReminderEnabled: value),
+                      );
+                      await MedicationNotificationService.instance
+                          .setDailyWellnessReminder(
+                            id: MedicationNotificationService.waterReminderId,
+                            title: 'Water reminder',
+                            body: 'Time for a glass of water.',
+                            enabled: value,
+                            hour: settings.waterReminderHour,
+                          );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  SwitchListTile(
+                    secondary: Icon(
+                      Icons.bedtime_outlined,
+                      color: Appcolors.Primary,
+                    ),
+                    title: Text(
+                      settings.isArabic ? 'تذكير النوم' : 'Sleep reminder',
+                    ),
+                    subtitle: Text(
+                      settings.isArabic
+                          ? 'يوميًا ${settings.sleepReminderHour.toString().padLeft(2, '0')}:00'
+                          : '${settings.sleepReminderHour.toString().padLeft(2, '0')}:00 daily',
+                    ),
+                    value: settings.sleepReminderEnabled,
+                    activeThumbColor: Appcolors.Primary,
+                    onChanged: (value) async {
+                      await controller.update(
+                        settings.copyWith(sleepReminderEnabled: value),
+                      );
+                      await MedicationNotificationService.instance
+                          .setDailyWellnessReminder(
+                            id: MedicationNotificationService.sleepReminderId,
+                            title: 'Sleep reminder',
+                            body: 'Start your wind-down routine.',
+                            enabled: value,
+                            hour: settings.sleepReminderHour,
+                          );
+                    },
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
               Text(
                 s.text('appearanceLanguage'),
@@ -140,7 +188,7 @@ class SettingsPage extends StatelessWidget {
               Text(
                 s.text('savedDevice'),
                 style: TextStyle(
-                  color: Appcolors.Grey2,
+                  color: context.appSecondaryText,
                   fontSize: 12,
                   height: 1.35,
                 ),
@@ -224,9 +272,7 @@ class _GoalsPageState extends State<_GoalsPage> {
         nutrition < 800 ||
         nutrition > 6000) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.of(context).text('invalidGoals')),
-        ),
+        SnackBar(content: Text(AppStrings.of(context).text('invalidGoals'))),
       );
       return;
     }
@@ -246,65 +292,73 @@ class _GoalsPageState extends State<_GoalsPage> {
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         title: Text(
           s.text('dailyGoalsTitle'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            _GoalField(
-              controller: _waterController,
-              label: s.text('waterGoal'),
-              suffix: 'ml',
-              icon: Icons.water_drop_outlined,
-            ),
-            const SizedBox(height: 14),
-            _GoalField(
-              controller: _sleepController,
-              label: s.text('sleepGoal'),
-              suffix: s.text('hours'),
-              icon: Icons.bedtime_outlined,
-              decimal: true,
-            ),
-            const SizedBox(height: 14),
-            _GoalField(
-              controller: _activityController,
-              label: s.text('activeCaloriesGoal'),
-              suffix: 'kcal',
-              icon: Icons.local_fire_department_outlined,
-            ),
-            const SizedBox(height: 14),
-            _GoalField(
-              controller: _nutritionController,
-              label: s.text('dailyFoodGoal'),
-              suffix: 'kcal',
-              icon: Icons.restaurant_outlined,
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Appcolors.Primary,
-                  foregroundColor: Appcolors.White,
-                ),
-                child: Text(
-                  s.text('saveGoals'),
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+      body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  _GoalField(
+                    controller: _waterController,
+                    label: s.text('waterGoal'),
+                    suffix: 'ml',
+                    icon: Icons.water_drop_outlined,
+                  ),
+                  const SizedBox(height: 14),
+                  _GoalField(
+                    controller: _sleepController,
+                    label: s.text('sleepGoal'),
+                    suffix: s.text('hours'),
+                    icon: Icons.bedtime_outlined,
+                    decimal: true,
+                  ),
+                  const SizedBox(height: 14),
+                  _GoalField(
+                    controller: _activityController,
+                    label: s.text('activeCaloriesGoal'),
+                    suffix: 'kcal',
+                    icon: Icons.local_fire_department_outlined,
+                  ),
+                  const SizedBox(height: 14),
+                  _GoalField(
+                    controller: _nutritionController,
+                    label: s.text('dailyFoodGoal'),
+                    suffix: 'kcal',
+                    icon: Icons.restaurant_outlined,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Appcolors.Primary,
+                        foregroundColor: context.appOnPrimary,
+                      ),
+                      child: Text(
+                        s.text('saveGoals'),
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -334,10 +388,10 @@ class _GoalField extends StatelessWidget {
       suffixText: suffix,
       prefixIcon: Icon(icon, color: Appcolors.Primary),
       filled: true,
-      fillColor: Appcolors.White,
+      fillColor: context.appSurface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Appcolors.Grey3),
+        borderSide: BorderSide(color: context.appOutline),
       ),
     ),
   );
@@ -349,11 +403,14 @@ class _SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: Appcolors.White,
-      border: Border.all(color: Appcolors.Grey3),
+      color: context.appSurface,
+      border: Border.all(color: context.appOutline),
       borderRadius: BorderRadius.circular(20),
     ),
-    child: Column(children: children),
+    child: Material(
+      color: Colors.transparent,
+      child: Column(children: children),
+    ),
   );
 }
 
@@ -372,9 +429,12 @@ class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
     onTap: onTap,
     leading: Icon(icon, color: Appcolors.Primary),
-    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-    subtitle: Text(subtitle, style: const TextStyle(color: Appcolors.Grey2)),
-    trailing: const Icon(Icons.chevron_right_rounded, color: Appcolors.Grey2),
+    title: Text(title, style: TextStyle(fontWeight: FontWeight.w600)),
+    subtitle: Text(subtitle, style: TextStyle(color: context.appSecondaryText)),
+    trailing: Icon(
+      Icons.chevron_right_rounded,
+      color: context.appSecondaryText,
+    ),
   );
 }
 
@@ -397,22 +457,57 @@ class _ChoiceRow<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: Appcolors.Primary),
-    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-    subtitle: Text(label, style: const TextStyle(color: Appcolors.Grey2)),
-    trailing: DropdownButton<T>(
-      value: value,
-      underline: const SizedBox(),
-      items: values
-          .map(
-            (item) =>
-                DropdownMenuItem(value: item, child: Text(itemLabel(item))),
-          )
-          .toList(),
-      onChanged: (selected) {
-        if (selected != null) onChanged(selected);
-      },
-    ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final narrow = constraints.maxWidth < 360;
+      final dropdown = DropdownButton<T>(
+        value: value,
+        isExpanded: narrow,
+        underline: const SizedBox(),
+        items: values
+            .map(
+              (item) =>
+                  DropdownMenuItem(value: item, child: Text(itemLabel(item))),
+            )
+            .toList(),
+        onChanged: (selected) {
+          if (selected != null) onChanged(selected);
+        },
+      );
+      if (narrow) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: Appcolors.Primary),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(color: context.appSecondaryText)),
+              dropdown,
+            ],
+          ),
+        );
+      }
+      return ListTile(
+        leading: Icon(icon, color: Appcolors.Primary),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          label,
+          style: TextStyle(color: context.appSecondaryText),
+        ),
+        trailing: dropdown,
+      );
+    },
   );
 }

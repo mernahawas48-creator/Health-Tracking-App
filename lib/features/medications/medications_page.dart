@@ -1,4 +1,7 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meditrack/features/medications/medication_cubit.dart';
 import 'package:meditrack/features/medications/add_medication_page.dart';
 import 'package:meditrack/features/medications/models/medication.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
@@ -6,18 +9,7 @@ import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 
 class MedicationsPage extends StatefulWidget {
-  const MedicationsPage({
-    super.key,
-    required this.medications,
-    required this.onMedicationAdded,
-    required this.onMedicationChanged,
-    required this.onMedicationDeleted,
-  });
-
-  final List<Medication> medications;
-  final ValueChanged<Medication> onMedicationAdded;
-  final ValueChanged<Medication> onMedicationChanged;
-  final ValueChanged<Medication> onMedicationDeleted;
+  const MedicationsPage({super.key});
 
   @override
   State<MedicationsPage> createState() => _MedicationsPageState();
@@ -30,91 +22,137 @@ class _MedicationsPageState extends State<MedicationsPage> {
       MaterialPageRoute(builder: (_) => const AddMedicationPage()),
     );
     if (medication == null || !mounted) return;
-    widget.onMedicationAdded(medication);
-    setState(() {});
+    await context.read<MedicationCubit>().add(medication);
   }
 
   void _updateMedication(Medication medication) {
-    widget.onMedicationChanged(medication);
-    setState(() {});
+    context.read<MedicationCubit>().update(medication);
   }
 
   Future<void> _editMedication(Medication medication) async {
-    final updated = await Navigator.push<Medication>(context, MaterialPageRoute(builder: (_) => AddMedicationPage(medication: medication)));
+    final updated = await Navigator.push<Medication>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddMedicationPage(medication: medication),
+      ),
+    );
     if (updated != null && mounted) _updateMedication(updated);
   }
 
   Future<void> _deleteMedication(Medication medication) async {
     final strings = AppStrings.of(context);
-    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(title: Text(strings.text('deleteMedication')), content: Text(strings.text('deleteMedicationMessage')), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(strings.text('cancel'))), TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(strings.text('delete'), style: const TextStyle(color: Colors.red)))]));
-    if (confirmed == true && mounted) { widget.onMedicationDeleted(medication); setState(() {}); }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(strings.text('deleteMedication')),
+        content: Text(strings.text('deleteMedicationMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(strings.text('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              strings.text('delete'),
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await context.read<MedicationCubit>().delete(medication);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
-    final summary = MedicationAdherenceService.summaryForToday(
-      widget.medications,
-    );
-
-    return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
-      appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          strings.text('myMedications'),
-          style: TextStyle(fontWeight: FontWeight.bold),
+    return BlocListener<MedicationCubit, MedicationState>(
+      listenWhen: (previous, current) =>
+          previous.error != current.error && current.error != null,
+      listener: (context, state) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            strings.isArabic
+                ? 'تعذر حفظ الأدوية. حاول مرة أخرى.'
+                : 'Could not save medications. Try again.',
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addMedication,
-        backgroundColor: Appcolors.Primary,
-        foregroundColor: Appcolors.White,
-        icon: const Icon(Icons.add),
-        label: Text(strings.text('addMedication')),
+      child: Scaffold(
+        backgroundColor: context.appCanvas,
+        appBar: AppBar(
+          backgroundColor: context.appSurface,
+          foregroundColor: context.appText,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(
+            strings.text('myMedications'),
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _addMedication,
+          backgroundColor: Appcolors.Primary,
+          foregroundColor: context.appOnPrimary,
+          icon: Icon(Icons.add),
+          label: Text(strings.text('addMedication')),
+        ),
+        body: BlocBuilder<MedicationCubit, MedicationState>(
+          builder: (context, state) => state.loading
+              ? const Center(child: CircularProgressIndicator())
+              : state.medications.isEmpty
+              ? _EmptyMedicationList(onAdd: _addMedication)
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  children: [
+                    _AdherenceCard(summary: state.todaySummary),
+                    const SizedBox(height: 20),
+                    Text(
+                      strings.text('todaySchedule'),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._todayMedicationTiles(state.medications),
+                    const SizedBox(height: 20),
+                    Text(
+                      strings.text('allMedications'),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...state.medications.map(
+                      (medication) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _MedicationTile(
+                          medication: medication,
+                          onEdit: () => _editMedication(medication),
+                          onDelete: () => _deleteMedication(medication),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
-      body: widget.medications.isEmpty
-          ? _EmptyMedicationList(onAdd: _addMedication)
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              children: [
-                _AdherenceCard(summary: summary),
-                const SizedBox(height: 20),
-                Text(
-                  strings.text('todaySchedule'),
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                ..._todayMedicationTiles(),
-                const SizedBox(height: 20),
-                Text(
-                  strings.text('allMedications'),
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                ...widget.medications.map(
-                  (medication) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _MedicationTile(medication: medication, onEdit: () => _editMedication(medication), onDelete: () => _deleteMedication(medication)),
-                  ),
-                ),
-              ],
-            ),
     );
   }
 
-  List<Widget> _todayMedicationTiles() {
+  List<Widget> _todayMedicationTiles(List<Medication> items) {
     final today = DateTime.now();
     final medications =
-        widget.medications.where((item) => item.isScheduledFor(today)).toList()
-          ..sort(
-            (a, b) => a.time.hour == b.time.hour
-                ? a.time.minute.compareTo(b.time.minute)
-                : a.time.hour.compareTo(b.time.hour),
-          );
+        items.where((item) => item.isScheduledFor(today)).toList()..sort(
+          (a, b) => a.time.hour == b.time.hour
+              ? a.time.minute.compareTo(b.time.minute)
+              : a.time.hour.compareTo(b.time.hour),
+        );
 
     if (medications.isEmpty) {
       return const [_EmptyScheduleCard()];
@@ -157,9 +195,9 @@ class _AdherenceCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Appcolors.White,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Appcolors.Grey3),
+        border: Border.all(color: context.appOutline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,14 +220,14 @@ class _AdherenceCard extends StatelessWidget {
                   children: [
                     Text(
                       strings.text('medicationAdherence'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     Text(
                       strings.dayStreak(summary.streakDays),
-                      style: const TextStyle(color: Appcolors.SecondaryOrange),
+                      style: TextStyle(color: Appcolors.SecondaryOrange),
                     ),
                   ],
                 ),
@@ -213,11 +251,11 @@ class _AdherenceCard extends StatelessWidget {
               value: summary.completionRate,
               minHeight: 9,
               color: color,
-              backgroundColor: const Color(0xffFBE5DD),
+              backgroundColor: context.appMutedSurface,
             ),
           ),
           const SizedBox(height: 10),
-          Text(message, style: const TextStyle(color: Appcolors.Grey1)),
+          Text(message, style: TextStyle(color: context.appSecondaryText)),
         ],
       ),
     );
@@ -238,12 +276,12 @@ class _TodayDoseCard extends StatelessWidget {
         ? Appcolors.Primary
         : status == DoseStatus.skipped
         ? Appcolors.SecondaryOrange
-        : Appcolors.Grey1;
+        : context.appSecondaryText;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Appcolors.White,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: statusColor.withOpacity(.35)),
       ),
@@ -255,7 +293,7 @@ class _TodayDoseCard extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xffE3F7F8),
+                  color: context.appMutedSurface,
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(medication.type.icon, color: Appcolors.Primary),
@@ -267,7 +305,7 @@ class _TodayDoseCard extends StatelessWidget {
                   children: [
                     Text(
                       medication.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -275,7 +313,7 @@ class _TodayDoseCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       '${medication.dosage} • ${medication.formattedTime}',
-                      style: const TextStyle(color: Appcolors.Grey2),
+                      style: TextStyle(color: context.appSecondaryText),
                     ),
                   ],
                 ),
@@ -294,7 +332,7 @@ class _TodayDoseCard extends StatelessWidget {
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Appcolors.SecondaryOrange,
-                      side: const BorderSide(color: Appcolors.SecondaryOrange),
+                      side: BorderSide(color: Appcolors.SecondaryOrange),
                     ),
                     child: Text(AppStrings.of(context).text('skip')),
                   ),
@@ -305,11 +343,11 @@ class _TodayDoseCard extends StatelessWidget {
                     onPressed: () => onChanged(
                       medication.withStatus(DateTime.now(), DoseStatus.taken),
                     ),
-                    icon: const Icon(Icons.check_rounded),
+                    icon: Icon(Icons.check_rounded),
                     label: Text(AppStrings.of(context).text('taken')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Appcolors.Primary,
-                      foregroundColor: Appcolors.White,
+                      foregroundColor: context.appOnPrimary,
                     ),
                   ),
                 ),
@@ -333,7 +371,11 @@ class _TodayDoseCard extends StatelessWidget {
 }
 
 class _MedicationTile extends StatelessWidget {
-  const _MedicationTile({required this.medication, required this.onEdit, required this.onDelete});
+  const _MedicationTile({
+    required this.medication,
+    required this.onEdit,
+    required this.onDelete,
+  });
   final Medication medication;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -343,9 +385,9 @@ class _MedicationTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Appcolors.White,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Appcolors.Grey3),
+        border: Border.all(color: context.appOutline),
       ),
       child: Row(
         children: [
@@ -353,7 +395,7 @@ class _MedicationTile extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: const Color(0xffE3F7F8),
+              color: context.appMutedSurface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
@@ -369,19 +411,19 @@ class _MedicationTile extends StatelessWidget {
               children: [
                 Text(
                   medication.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${AppStrings.of(context).medicationType(medication.type.name)} • ${medication.dosage}',
-                  style: const TextStyle(color: Appcolors.Grey2),
+                  style: TextStyle(color: context.appSecondaryText),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   medication.hasScheduledReminder
                       ? '${AppStrings.of(context).medicationFrequency(medication.frequency.name)} • ${medication.formattedTime}'
                       : AppStrings.of(context).text('asNeededNoReminder'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Appcolors.Primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -393,8 +435,14 @@ class _MedicationTile extends StatelessWidget {
           PopupMenuButton<String>(
             onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
             itemBuilder: (context) => [
-              PopupMenuItem(value: 'edit', child: Text(AppStrings.of(context).text('editMedication'))),
-              PopupMenuItem(value: 'delete', child: Text(AppStrings.of(context).text('deleteMedication'))),
+              PopupMenuItem(
+                value: 'edit',
+                child: Text(AppStrings.of(context).text('editMedication')),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Text(AppStrings.of(context).text('deleteMedication')),
+              ),
             ],
           ),
         ],
@@ -415,26 +463,26 @@ class _EmptyMedicationList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.medication_outlined,
               size: 64,
-              color: Appcolors.Grey2,
+              color: context.appSecondaryText,
             ),
             const SizedBox(height: 16),
             Text(
               AppStrings.of(context).text('noMedications'),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               AppStrings.of(context).text('addMedicationDescription'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Appcolors.Grey2),
+              style: TextStyle(color: context.appSecondaryText),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
               onPressed: onAdd,
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
               label: Text(AppStrings.of(context).text('addMedication')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Appcolors.Primary,
@@ -455,8 +503,8 @@ class _EmptyScheduleCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Appcolors.White,
-        border: Border.all(color: Appcolors.Grey3),
+        color: context.appSurface,
+        border: Border.all(color: context.appOutline),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(

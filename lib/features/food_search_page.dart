@@ -1,6 +1,8 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meditrack/features/nutrition/nutrition_cubit.dart';
 import 'package:meditrack/models/nutrition_food.dart';
-import 'package:meditrack/services/usda_food_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 
@@ -15,11 +17,9 @@ class FoodSearchPage extends StatefulWidget {
 
 class _FoodSearchPageState extends State<FoodSearchPage> {
   final _controller = TextEditingController();
-  final _service = UsdaFoodService();
-
-  List<NutritionFood> _foods = [];
-  bool _loading = false;
-  String? _error;
+  List<NutritionFood> get _foods => context.read<NutritionCubit>().state.foods;
+  bool get _loading => context.read<NutritionCubit>().state.searching;
+  String? get _error => context.read<NutritionCubit>().state.searchError;
   _FoodFilter _filter = _FoodFilter.all;
 
   List<NutritionFood> get _filteredFoods {
@@ -43,33 +43,17 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     final query = _controller.text.trim();
     if (query.isEmpty) return;
 
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final foods = await _service.search(query);
-      if (mounted) setState(() => _foods = foods);
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _error = AppStrings.of(context).text('foodLoadError');
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    await context.read<NutritionCubit>().search(query);
   }
 
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         title: Text(strings.text('searchFood')),
       ),
@@ -82,22 +66,30 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
               onSubmitted: (_) => _search(),
               decoration: InputDecoration(
                 hintText: strings.text('searchFoodHint'),
-                prefixIcon: const Icon(Icons.search, color: Appcolors.Primary),
+                prefixIcon: Icon(Icons.search, color: Appcolors.Primary),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward),
+                  icon: Icon(Icons.arrow_forward),
                   onPressed: _search,
                 ),
                 filled: true,
-                fillColor: Appcolors.White,
+                fillColor: context.appSurface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Appcolors.Grey3),
+                  borderSide: BorderSide(color: context.appOutline),
                 ),
               ),
             ),
           ),
-          if (_foods.isNotEmpty) _buildFilters(),
-          Expanded(child: _buildResults()),
+          BlocBuilder<NutritionCubit, NutritionState>(
+            builder: (context, state) => state.foods.isNotEmpty
+                ? _buildFilters()
+                : const SizedBox.shrink(),
+          ),
+          Expanded(
+            child: BlocBuilder<NutritionCubit, NutritionState>(
+              builder: (context, state) => _buildResults(),
+            ),
+          ),
         ],
       ),
     );
@@ -110,9 +102,15 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
         children: [
           _filterChip(AppStrings.of(context).text('all'), _FoodFilter.all),
           const SizedBox(width: 8),
-          _filterChip(AppStrings.of(context).text('generic'), _FoodFilter.generic),
+          _filterChip(
+            AppStrings.of(context).text('generic'),
+            _FoodFilter.generic,
+          ),
           const SizedBox(width: 8),
-          _filterChip(AppStrings.of(context).text('branded'), _FoodFilter.branded),
+          _filterChip(
+            AppStrings.of(context).text('branded'),
+            _FoodFilter.branded,
+          ),
         ],
       ),
     );
@@ -124,7 +122,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
       selected: _filter == filter,
       selectedColor: Appcolors.Primary,
       labelStyle: TextStyle(
-        color: _filter == filter ? Appcolors.White : Appcolors.Black2,
+        color: _filter == filter ? context.appOnPrimary : context.appText,
         fontWeight: FontWeight.w600,
       ),
       onSelected: (_) => setState(() => _filter = filter),
@@ -137,21 +135,24 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(_error!, textAlign: TextAlign.center),
+          child: Text(
+            AppStrings.of(context).text(_error!),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     if (_foods.isEmpty)
       return Center(
         child: Text(
           AppStrings.of(context).text('searchFoodEmpty'),
-          style: const TextStyle(color: Appcolors.Grey2),
+          style: TextStyle(color: context.appSecondaryText),
         ),
       );
     if (_filteredFoods.isEmpty)
       return Center(
         child: Text(
           AppStrings.of(context).text('noFilteredFoods'),
-          style: const TextStyle(color: Appcolors.Grey2),
+          style: TextStyle(color: context.appSecondaryText),
         ),
       );
 
@@ -185,13 +186,13 @@ class _FoodResult extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Appcolors.White,
+          color: context.appSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Appcolors.Grey3),
+          border: Border.all(color: context.appOutline),
         ),
         child: Row(
           children: [
-            const Icon(Icons.restaurant_rounded, color: Appcolors.Primary),
+            Icon(Icons.restaurant_rounded, color: Appcolors.Primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -201,14 +202,14 @@ class _FoodResult extends StatelessWidget {
                     food.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   if (food.brandName != null && food.brandName!.isNotEmpty) ...[
                     const SizedBox(height: 3),
                     Text(
                       food.brandName!,
-                      style: const TextStyle(
-                        color: Appcolors.Black2,
+                      style: TextStyle(
+                        color: context.appText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -219,8 +220,8 @@ class _FoodResult extends StatelessWidget {
                       food.displayDescription!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Appcolors.Grey2,
+                      style: TextStyle(
+                        color: context.appSecondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -239,7 +240,7 @@ class _FoodResult extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Appcolors.Grey2),
+            Icon(Icons.chevron_right_rounded, color: context.appSecondaryText),
           ],
         ),
       ),
@@ -254,12 +255,12 @@ class _InfoLabel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
     decoration: BoxDecoration(
-      color: const Color(0xffE3F7F8),
+      color: context.appMutedSurface,
       borderRadius: BorderRadius.circular(8),
     ),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         color: Appcolors.Primary,
         fontSize: 11,
         fontWeight: FontWeight.w600,
@@ -284,10 +285,10 @@ class _AddFoodPageState extends State<_AddFoodPage> {
     final multiplier = _grams / 100;
     final calories = widget.food.caloriesPer100g * multiplier;
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         title: Text(AppStrings.of(context).text('addFood')),
       ),
@@ -298,12 +299,12 @@ class _AddFoodPageState extends State<_AddFoodPage> {
           children: [
             Text(
               widget.food.name,
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
             ),
             if (widget.food.brandName != null)
               Text(
                 widget.food.brandName!,
-                style: const TextStyle(color: Appcolors.Grey1),
+                style: TextStyle(color: context.appSecondaryText),
               ),
             const SizedBox(height: 8),
             Text(
@@ -311,12 +312,12 @@ class _AddFoodPageState extends State<_AddFoodPage> {
                 calories: calories.round(),
                 protein: (widget.food.proteinPer100g * multiplier).round(),
               ),
-              style: const TextStyle(color: Appcolors.Grey1),
+              style: TextStyle(color: context.appSecondaryText),
             ),
             const SizedBox(height: 28),
             Text(
               AppStrings.of(context).text('servingAmount'),
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             Slider(
               value: _grams,
@@ -330,14 +331,14 @@ class _AddFoodPageState extends State<_AddFoodPage> {
             Center(
               child: Text(
                 '${_grams.round()} ${AppStrings.of(context).text('grams')}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 24),
-            Text(AppStrings.of(context).text('meal'), style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              AppStrings.of(context).text('meal'),
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -349,8 +350,8 @@ class _AddFoodPageState extends State<_AddFoodPage> {
                       selectedColor: Appcolors.Primary,
                       labelStyle: TextStyle(
                         color: _meal == meal
-                            ? Appcolors.White
-                            : Appcolors.Black,
+                            ? context.appOnPrimary
+                            : context.appText,
                       ),
                       onSelected: (_) => setState(() => _meal = meal),
                     ),
@@ -374,7 +375,7 @@ class _AddFoodPageState extends State<_AddFoodPage> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Appcolors.Primary,
-                  foregroundColor: Appcolors.White,
+                  foregroundColor: context.appOnPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),

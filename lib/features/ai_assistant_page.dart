@@ -1,3 +1,4 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:meditrack/services/health_assistant_service.dart';
 import 'package:meditrack/themes/appcolors.dart';
@@ -13,7 +14,10 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   final _input = TextEditingController();
   final _assistant = LocalHealthAssistantService();
   final _messages = <_Message>[
-    const _Message('Hi! I can help with healthy habits and app tracking.', false),
+    const _Message(
+      'Hi! I can help with healthy habits and app tracking.',
+      false,
+    ),
   ];
   bool _waiting = false;
 
@@ -51,45 +55,100 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   }
 
   @override
-  void dispose() { _input.dispose(); super.dispose(); }
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(AppStrings.of(context).isArabic ? 'المساعد الصحي' : 'Health Assistant')),
-    body: Column(children: [
-      Expanded(child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _messages.length + (_waiting ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _messages.length) return const Padding(padding: EdgeInsets.all(8), child: Align(alignment: Alignment.centerLeft, child: CircularProgressIndicator()));
-          final item = _messages[index];
-          return Align(
-            alignment: item.user ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(12),
-              constraints: const BoxConstraints(maxWidth: 310),
-              decoration: BoxDecoration(color: item.user ? Appcolors.Primary : const Color(0xffE3F7F8), borderRadius: BorderRadius.circular(16)),
-              child: Text(item.text, style: TextStyle(color: item.user ? Colors.white : Appcolors.Black2)),
+    appBar: AppBar(
+      title: Text(
+        AppStrings.of(context).isArabic ? 'المساعد الصحي' : 'Health Assistant',
+      ),
+    ),
+    body: Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _messages.length + (_waiting ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _messages.length)
+                return const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              final item = _messages[index];
+              return Align(
+                alignment: item.user
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  constraints: const BoxConstraints(maxWidth: 310),
+                  decoration: BoxDecoration(
+                    color: item.user
+                        ? Appcolors.Primary
+                        : context.appMutedSurface,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    item.text,
+                    style: TextStyle(
+                      color: item.user ? context.appOnPrimary : context.appText,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    onSubmitted: (_) => _send(),
+                    decoration: InputDecoration(
+                      hintText: AppStrings.of(context).isArabic
+                          ? 'اسأل عن الماء أو النوم أو الأدوية…'
+                          : 'Ask about water, sleep, medication…',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _send,
+                  icon: Icon(Icons.send, color: Appcolors.Primary),
+                ),
+              ],
             ),
-          );
-        },
-      )),
-      SafeArea(child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(children: [
-          Expanded(child: TextField(controller: _input, onSubmitted: (_) => _send(), decoration: InputDecoration(hintText: AppStrings.of(context).isArabic ? 'اسأل عن الماء أو النوم أو الأدوية…' : 'Ask about water, sleep, medication…'))),
-          IconButton(onPressed: _send, icon: const Icon(Icons.send, color: Appcolors.Primary)),
-        ]),
-      )),
-    ]),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
 String _arabicReply(String question) {
-  if (question.contains('ماء')) return 'اشرب رشفات صغيرة ومنتظمة، وسجّل كوبك التالي في متابعة الماء.';
-  if (question.contains('نوم')) return 'حاول تثبيت وقت النوم وابدأ روتينًا هادئًا قبل النوم.';
-  if (question.contains('دواء')) return 'استخدم جدول الدواء واتبع تعليمات الطبيب أو الصيدلي. لا أستطيع تقديم تشخيص طبي.';
+  if (question.contains('ماء'))
+    return 'اشرب رشفات صغيرة ومنتظمة، وسجّل كوبك التالي في متابعة الماء.';
+  if (question.contains('نوم'))
+    return 'حاول تثبيت وقت النوم وابدأ روتينًا هادئًا قبل النوم.';
+  if (question.contains('دواء'))
+    return 'استخدم جدول الدواء واتبع تعليمات الطبيب أو الصيدلي. لا أستطيع تقديم تشخيص طبي.';
   return 'يمكنني مساعدتك في فهم بيانات التطبيق وبناء عادات صحية وتحضير أسئلة للطبيب.';
 }
 
-class _Message { const _Message(this.text, this.user); final String text; final bool user; }
+class _Message {
+  const _Message(this.text, this.user);
+  final String text;
+  final bool user;
+}

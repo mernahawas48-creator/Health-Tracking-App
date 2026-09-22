@@ -1,3 +1,4 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:meditrack/models/nutrition_food.dart';
 import 'package:meditrack/themes/appcolors.dart';
@@ -55,10 +56,10 @@ class MealIdeasPage extends StatelessWidget {
     final strings = AppStrings.of(context);
     final ideas = _ideas;
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -72,20 +73,17 @@ class MealIdeasPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xffEEF8F8),
+              color: context.appMutedSurface,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Appcolors.Primary,
-                ),
+                Icon(Icons.auto_awesome_rounded, color: Appcolors.Primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     '${AppStrings.of(context).caloriesRemaining(remainingCalories.round())}. ${AppStrings.of(context).text('remainingIdeas')}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -94,7 +92,7 @@ class MealIdeasPage extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             strings.text('suggestedForYou'),
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...ideas.map((idea) => _MealIdeaCard(idea: idea)),
@@ -103,7 +101,7 @@ class MealIdeasPage extends StatelessWidget {
             child: Text(
               strings.text('suggestionsDisclaimer'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Appcolors.Grey2, fontSize: 12),
+              style: TextStyle(color: context.appSecondaryText, fontSize: 12),
             ),
           ),
         ],
@@ -154,9 +152,9 @@ class _MealIdeaCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Appcolors.White,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Appcolors.Grey3),
+        border: Border.all(color: context.appOutline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,13 +165,10 @@ class _MealIdeaCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xffE3F7F8),
+                  color: context.appMutedSurface,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
-                  Icons.restaurant_rounded,
-                  color: Appcolors.Primary,
-                ),
+                child: Icon(Icons.restaurant_rounded, color: Appcolors.Primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -182,21 +177,21 @@ class _MealIdeaCard extends StatelessWidget {
                   children: [
                     Text(
                       AppStrings.of(context).mealIdea(idea.name),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       AppStrings.of(context).mealLabel(idea.meal.toLowerCase()),
-                      style: const TextStyle(color: Appcolors.Grey2),
+                      style: TextStyle(color: context.appSecondaryText),
                     ),
                   ],
                 ),
               ),
               Text(
                 '${idea.calories} kcal',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Appcolors.Primary,
                   fontWeight: FontWeight.bold,
                 ),
@@ -205,22 +200,20 @@ class _MealIdeaCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            idea.ingredients
-                .map(AppStrings.of(context).ingredient)
-                .join(' • '),
-            style: const TextStyle(color: Appcolors.Grey1),
+            idea.ingredients.map(AppStrings.of(context).ingredient).join(' • '),
+            style: TextStyle(color: context.appSecondaryText),
           ),
           const SizedBox(height: 12),
           Text(
             '${AppStrings.of(context).text('protein')} ${idea.protein}g   ${AppStrings.of(context).text('carbs')} ${idea.carbs}g   ${AppStrings.of(context).text('fat')} ${idea.fat}g',
-            style: const TextStyle(fontSize: 12, color: Appcolors.Grey2),
+            style: TextStyle(fontSize: 12, color: context.appSecondaryText),
           ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _addToLog(context),
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
               label: Text(AppStrings.of(context).text('addToMeals')),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Appcolors.Primary,

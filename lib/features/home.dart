@@ -1,4 +1,10 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meditrack/features/medications/medication_cubit.dart';
+import 'package:meditrack/features/nutrition/nutrition_cubit.dart';
+import 'package:meditrack/features/water/water_cubit.dart';
+import 'package:meditrack/features/sleep/sleep_cubit.dart';
 import 'package:meditrack/features/medications/add_medication_page.dart';
 import 'package:meditrack/features/medications/medications_page.dart';
 import 'package:meditrack/features/medications/models/medication.dart';
@@ -6,16 +12,9 @@ import 'package:meditrack/features/water_tracker_page.dart';
 import 'package:meditrack/features/sleep_tracker_page.dart';
 import 'package:meditrack/features/nutrition_page.dart';
 import 'package:meditrack/features/profile_page.dart';
-import 'package:meditrack/models/nutrition_food.dart';
-import 'package:meditrack/services/habit_streak_service.dart';
 import 'package:meditrack/services/medication_adherence_service.dart';
-import 'package:meditrack/services/medication_repository.dart';
-import 'package:meditrack/services/medication_notification_service.dart';
 import 'package:meditrack/features/ai_assistant_page.dart';
 import 'package:meditrack/features/notification_center_page.dart';
-import 'package:meditrack/services/nutrition_repository.dart';
-import 'package:meditrack/services/sleep_repository.dart';
-import 'package:meditrack/services/water_repository.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
@@ -28,69 +27,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int selectedIndex = 0;
-  final List<Medication> _medications = [];
-  final MedicationRepository _medicationRepository = MedicationRepository();
-  final NutritionRepository _nutritionRepository = NutritionRepository();
-  final SleepRepository _sleepRepository = SleepRepository();
-  final WaterRepository _waterRepository = WaterRepository();
-  bool _isLoadingDashboard = true;
-  final List<FoodLog> _foodLogs = [];
-  int _waterMl = 0;
-  int _waterStreak = 0;
-  int _sleepMinutes = 0;
-  int _sleepStreak = 0;
   String _userName = 'User Name';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDashboardData();
-  }
-
-  Future<void> _loadDashboardData() async {
-    final medications = await _medicationRepository.load();
-    final waterMl = await _waterRepository.loadToday();
-    final sleepMinutes = await _sleepRepository.loadToday();
-    final foodLogs = await _nutritionRepository.loadToday();
-    final waterStreak = await HabitStreakService.currentStreak(HabitType.water);
-    final sleepStreak = await HabitStreakService.currentStreak(HabitType.sleep);
-    if (!mounted) return;
-    setState(() {
-      _medications
-        ..clear()
-        ..addAll(medications);
-      _foodLogs
-        ..clear()
-        ..addAll(foodLogs);
-      _waterMl = waterMl;
-      _sleepMinutes = sleepMinutes;
-      _waterStreak = waterStreak;
-      _sleepStreak = sleepStreak;
-      _isLoadingDashboard = false;
-    });
-  }
-
-  Future<void> _saveMedications() async {
-    await _medicationRepository.save(_medications);
-    for (final medication in _medications) {
-      try {
-        await MedicationNotificationService.instance.sync(medication);
-      } catch (_) {
-        // The medication is already saved; Android alerts can be retried later.
-      }
-    }
-  }
-
-  Future<void> _loadStreaks() async {
-    final waterStreak = await HabitStreakService.currentStreak(HabitType.water);
-    final sleepStreak = await HabitStreakService.currentStreak(HabitType.sleep);
-    if (mounted) {
-      setState(() {
-        _waterStreak = waterStreak;
-        _sleepStreak = sleepStreak;
-      });
-    }
-  }
+  List<Medication> get _medications =>
+      context.read<MedicationCubit>().state.medications;
+  int get _waterMl => context.read<WaterCubit>().state.intakeMl;
+  int get _waterStreak => context.read<WaterCubit>().state.streak;
+  int get _sleepMinutes => context.read<SleepCubit>().state.minutes;
+  int get _sleepStreak => context.read<SleepCubit>().state.streak;
 
   List<Medication> get _today {
     final now = DateTime.now();
@@ -117,43 +60,14 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (_) => const AddMedicationPage()),
     );
     if (medication == null || !mounted) return;
-    setState(() => _medications.add(medication));
-    await _saveMedications();
-  }
-
-  Future<void> _addMedicationFromList(Medication medication) async {
-    setState(() => _medications.add(medication));
-    await _saveMedications();
-  }
-
-  Future<void> _updateMedication(Medication updatedMedication) async {
-    final index = _medications.indexWhere(
-      (item) => item.id == updatedMedication.id,
-    );
-    if (index < 0) return;
-    setState(() => _medications[index] = updatedMedication);
-    await _saveMedications();
-  }
-
-  Future<void> _deleteMedication(Medication medication) async {
-    setState(() => _medications.removeWhere((item) => item.id == medication.id));
-    await MedicationNotificationService.instance.cancel(medication);
-    await _saveMedications();
+    await context.read<MedicationCubit>().add(medication);
   }
 
   Future<void> _openMedications() async {
     await Navigator.push<void>(
       context,
-      MaterialPageRoute(
-        builder: (_) => MedicationsPage(
-          medications: _medications,
-          onMedicationAdded: _addMedicationFromList,
-          onMedicationChanged: _updateMedication,
-          onMedicationDeleted: _deleteMedication,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const MedicationsPage()),
     );
-    if (mounted) setState(() {});
   }
 
   Future<void> _openNutrition() async {
@@ -162,14 +76,9 @@ class _HomePageState extends State<HomePage> {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
-        builder: (_) => NutritionPage(
-          foodLogs: _foodLogs,
-          calorieGoal: settings.dailyCalorieGoal,
-          onLogsChanged: _nutritionRepository.saveToday,
-        ),
+        builder: (_) => NutritionPage(calorieGoal: settings.dailyCalorieGoal),
       ),
     );
-    await _loadDashboardData();
   }
 
   Future<void> _openProfile() async {
@@ -188,26 +97,17 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _openWaterTracker() async {
     final settings = AppSettingsScope.of(context).settings;
-    final waterMl = await Navigator.push<int>(
+    await Navigator.push<int>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            WaterTrackerPage(
-              initialWaterMl: _waterMl,
-              goalMl: settings.waterGoalMl,
-            ),
+        builder: (_) => WaterTrackerPage(goalMl: settings.waterGoalMl),
       ),
     );
-    if (waterMl != null && mounted) {
-      setState(() => _waterMl = waterMl);
-      await _waterRepository.saveToday(waterMl);
-      _loadStreaks();
-    }
   }
 
   Future<void> _openSleepTracker() async {
     final settings = AppSettingsScope.of(context).settings;
-    final sleepMinutes = await Navigator.push<int>(
+    await Navigator.push<int>(
       context,
       MaterialPageRoute(
         builder: (_) => SleepTrackerPage(
@@ -216,11 +116,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-    if (sleepMinutes != null && mounted) {
-      setState(() => _sleepMinutes = sleepMinutes);
-      await _sleepRepository.saveToday(sleepMinutes);
-      _loadStreaks();
-    }
   }
 
   String _formatDuration(int minutes) {
@@ -236,52 +131,71 @@ class _HomePageState extends State<HomePage> {
     final strings = AppStrings.of(context);
     final settings = AppSettingsScope.of(context).settings;
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: _isLoadingDashboard
-                ? const Padding(
-                    padding: EdgeInsets.only(top: 90),
-                    child: CircularProgressIndicator(color: Appcolors.Primary),
-                  )
-                : Column(
-                    children: [
-                _header(strings),
-                      Transform.translate(
-                        offset: const Offset(0, -50),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: [
-                              _upcomingCard(),
-                              const SizedBox(height: 20),
-                              _activityCard(settings.activeCaloriesGoal),
-                              const SizedBox(height: 20),
-                              _waterSleep(
-                                waterGoalMl: settings.waterGoalMl,
-                                sleepGoalMinutes: settings.sleepGoalMinutes,
-                              ),
-                              const SizedBox(height: 20),
-                              _nutritionSummaryCard(settings.dailyCalorieGoal),
-                              const SizedBox(height: 20),
-                              _todayCard(),
-                              const SizedBox(height: 100),
-                            ],
-                          ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  children: [
+                    _header(strings),
+                    Transform.translate(
+                      offset: const Offset(0, -50),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            BlocBuilder<MedicationCubit, MedicationState>(
+                              builder: (context, state) => _upcomingCard(),
+                            ),
+                            const SizedBox(height: 20),
+                            _activityCard(settings.activeCaloriesGoal),
+                            const SizedBox(height: 20),
+                            BlocBuilder<WaterCubit, WaterState>(
+                              builder: (context, state) =>
+                                  BlocBuilder<SleepCubit, SleepState>(
+                                    builder: (context, sleepState) =>
+                                        _waterSleep(
+                                          waterGoalMl: settings.waterGoalMl,
+                                          sleepGoalMinutes:
+                                              settings.sleepGoalMinutes,
+                                        ),
+                                  ),
+                            ),
+                            const SizedBox(height: 20),
+                            BlocBuilder<NutritionCubit, NutritionState>(
+                              builder: (context, state) =>
+                                  _nutritionSummaryCard(
+                                    settings.dailyCalorieGoal,
+                                  ),
+                            ),
+                            const SizedBox(height: 20),
+                            BlocBuilder<MedicationCubit, MedicationState>(
+                              builder: (context, state) => _todayCard(),
+                            ),
+                            const SizedBox(height: 100),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           Positioned(
             right: 20,
             bottom: 20,
             child: FloatingActionButton(
               heroTag: 'aiAssistant',
-              backgroundColor: Appcolors.White,
+              backgroundColor: context.appSurface,
               shape: const CircleBorder(),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiAssistantPage())),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+              ),
               child: const Text('🤖', style: TextStyle(fontSize: 27)),
             ),
           ),
@@ -295,7 +209,7 @@ class _HomePageState extends State<HomePage> {
             height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Appcolors.White, width: 4),
+              border: Border.all(color: context.appSurface, width: 4),
             ),
             child: FloatingActionButton(
               heroTag: 'addAlert',
@@ -303,14 +217,14 @@ class _HomePageState extends State<HomePage> {
               elevation: 0,
               shape: const CircleBorder(),
               onPressed: _addMedication,
-              child: const Icon(Icons.add, color: Appcolors.White, size: 40),
+              child: Icon(Icons.add, color: context.appOnPrimary, size: 40),
             ),
           ),
           const SizedBox(height: 3),
           Text(
             AppStrings.of(context).text('addAlert'),
             style: TextStyle(
-              color: Appcolors.Grey2,
+              color: context.appSecondaryText,
               fontSize: 15,
               fontWeight: FontWeight.w500,
             ),
@@ -325,7 +239,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             _navItem(0, Icons.home_outlined, strings.text('home')),
             _navItem(1, Icons.local_pharmacy_outlined, strings.text('meds')),
-            const SizedBox(width: 70),
+            const SizedBox(width: 56),
             _navItem(2, Icons.eco_outlined, strings.text('nutrition')),
             _navItem(3, Icons.person_2_outlined, strings.text('profile')),
           ],
@@ -344,41 +258,49 @@ class _HomePageState extends State<HomePage> {
         children: [
           const CircleAvatar(radius: 30, child: Icon(Icons.person)),
           const SizedBox(width: 15),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${strings.text('welcome')} 👋',
-                style: const TextStyle(
-                  color: Appcolors.White,
-                  fontFamily: 'Inter',
-                  fontSize: 17,
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${strings.text('welcome')} 👋',
+                  style: TextStyle(
+                    color: context.appOnPrimary,
+                    fontFamily: 'Inter',
+                    fontSize: 17,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _userName,
-                style: const TextStyle(
-                  color: Appcolors.White,
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 4),
+                Text(
+                  _userName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.appOnPrimary,
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(.15),
+              color: context.appOnPrimary.withOpacity(.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationCenterPage())),
-              icon: const Icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationCenterPage(),
+                ),
+              ),
+              icon: Icon(
                 Icons.notifications_none,
-                color: Appcolors.White,
+                color: context.appOnPrimary,
                 size: 27,
               ),
             ),
@@ -392,9 +314,9 @@ class _HomePageState extends State<HomePage> {
     width: double.infinity,
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
-      color: Appcolors.White,
+      color: context.appSurface,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Appcolors.Grey3),
+      border: Border.all(color: context.appOutline),
     ),
     child: child,
   );
@@ -408,9 +330,11 @@ class _HomePageState extends State<HomePage> {
             children: [
               Icon(Icons.medication_outlined, color: Appcolors.SecondaryOrange),
               SizedBox(width: 8),
-              Text(
-                AppStrings.of(context).text('upcomingMedication'),
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  AppStrings.of(context).text('upcomingMedication'),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -421,7 +345,7 @@ class _HomePageState extends State<HomePage> {
                 Icon(
                   Icons.notifications_none,
                   size: 35,
-                  color: Appcolors.Grey2,
+                  color: context.appSecondaryText,
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -431,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(height: 5),
                 Text(
                   AppStrings.of(context).text('addFirstMedication'),
-                  style: TextStyle(color: Appcolors.Grey2),
+                  style: TextStyle(color: context.appSecondaryText),
                 ),
               ],
             )
@@ -442,20 +366,17 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 8),
                 Text(
                   medication.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${AppStrings.of(context).medicationType(medication.type.name)} • ${medication.dosage}',
-                  style: const TextStyle(color: Appcolors.Grey2),
+                  style: TextStyle(color: context.appSecondaryText),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${AppStrings.of(context).text('nextReminder')}: ${medication.formattedTime}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Appcolors.Primary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -482,11 +403,19 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 8,
+          runSpacing: 4,
           children: [
-            Text(AppStrings.of(context).text('burnedCalories'), style: const TextStyle(fontSize: 15)),
-            Text('0 / $activeCaloriesGoal kcal', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              AppStrings.of(context).text('burnedCalories'),
+              style: TextStyle(fontSize: 15),
+            ),
+            Text(
+              '0 / $activeCaloriesGoal kcal',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         SizedBox(height: 10),
@@ -494,7 +423,7 @@ class _HomePageState extends State<HomePage> {
           value: 0,
           minHeight: 7,
           color: Appcolors.Primary,
-          backgroundColor: Color(0xffE8DFFF),
+          backgroundColor: context.appMutedSurface,
         ),
         SizedBox(height: 25),
         Row(
@@ -529,7 +458,8 @@ class _HomePageState extends State<HomePage> {
           icon: Icons.water_drop_outlined,
           iconColor: Colors.blue,
           title: AppStrings.of(context).text('water'),
-          value: '$_waterMl / $waterGoalMl ml\n${AppStrings.of(context).dayStreak(_waterStreak)}',
+          value:
+              '$_waterMl / $waterGoalMl ml\n${AppStrings.of(context).dayStreak(_waterStreak)}',
           onTap: _openWaterTracker,
         ),
       ),
@@ -560,9 +490,9 @@ class _HomePageState extends State<HomePage> {
     child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Appcolors.White,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Appcolors.Grey3),
+        border: Border.all(color: context.appOutline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,20 +501,17 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 5),
-          Text(value, style: const TextStyle(color: Appcolors.Grey2)),
+          Text(value, style: TextStyle(color: context.appSecondaryText)),
         ],
       ),
     ),
   );
 
   Widget _nutritionSummaryCard(int calorieGoal) {
-    final consumed = _foodLogs.fold<double>(
-      0,
-      (total, log) => total + log.calories,
-    );
+    final consumed = context.read<NutritionCubit>().state.calories;
     final progress = (consumed / calorieGoal).clamp(0.0, 1.0);
     return InkWell(
       onTap: _openNutrition,
@@ -595,18 +522,20 @@ class _HomePageState extends State<HomePage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.restaurant_outlined, color: Appcolors.Primary),
+                Icon(Icons.restaurant_outlined, color: Appcolors.Primary),
                 const SizedBox(width: 8),
-                Text(
-                  AppStrings.of(context).text('nutrition'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Text(
-                  '${consumed.round()} / $calorieGoal kcal',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                Expanded(
+                  child: Text(
+                    AppStrings.of(context).text('nutrition'),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${consumed.round()} / $calorieGoal kcal',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             ClipRRect(
@@ -615,7 +544,7 @@ class _HomePageState extends State<HomePage> {
                 value: progress,
                 minHeight: 8,
                 color: Appcolors.Primary,
-                backgroundColor: const Color(0xffDDF4F5),
+                backgroundColor: context.appMutedSurface,
               ),
             ),
           ],
@@ -640,12 +569,12 @@ class _HomePageState extends State<HomePage> {
                 Icon(
                   Icons.medication_outlined,
                   size: 38,
-                  color: Appcolors.Grey2,
+                  color: context.appSecondaryText,
                 ),
                 SizedBox(height: 8),
                 Text(
                   AppStrings.of(context).text('noMedicationsToday'),
-                  style: TextStyle(color: Appcolors.Grey2),
+                  style: TextStyle(color: context.appSecondaryText),
                 ),
               ],
             ),
@@ -660,7 +589,7 @@ class _HomePageState extends State<HomePage> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xffE3F7F8),
+                      color: context.appMutedSurface,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(medication.type.icon, color: Appcolors.Primary),
@@ -672,7 +601,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Text(
                           medication.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -680,8 +609,8 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 3),
                         Text(
                           '${AppStrings.of(context).medicationType(medication.type.name)} • ${medication.dosage}',
-                          style: const TextStyle(
-                            color: Appcolors.Grey2,
+                          style: TextStyle(
+                            color: context.appSecondaryText,
                             fontSize: 13,
                           ),
                         ),
@@ -696,7 +625,7 @@ class _HomePageState extends State<HomePage> {
                         : medication.statusOn(DateTime.now()) ==
                               DoseStatus.skipped
                         ? Appcolors.SecondaryOrange
-                        : Appcolors.Grey2,
+                        : context.appSecondaryText,
                   ),
                 ],
               ),
@@ -712,38 +641,48 @@ class _HomePageState extends State<HomePage> {
     ),
   );
 
-  Widget _navItem(int index, IconData icon, String title) => IconButton(
-    padding: EdgeInsets.zero,
-    onPressed: () async {
-      if (index == 1) {
-        await _openMedications();
-        return;
-      }
-      if (index == 2) {
-        await _openNutrition();
-        return;
-      }
-      if (index == 3) {
-        await _openProfile();
-        return;
-      }
-      setState(() => selectedIndex = index);
-    },
-    icon: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: selectedIndex == index ? Appcolors.Primary : Appcolors.Grey2,
-        ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            color: selectedIndex == index ? Appcolors.Primary : Appcolors.Grey2,
+  Widget _navItem(int index, IconData icon, String title) => Expanded(
+    child: IconButton(
+      padding: EdgeInsets.zero,
+      onPressed: () async {
+        if (index == 1) {
+          await _openMedications();
+          return;
+        }
+        if (index == 2) {
+          await _openNutrition();
+          return;
+        }
+        if (index == 3) {
+          await _openProfile();
+          return;
+        }
+        setState(() => selectedIndex = index);
+      },
+      icon: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: selectedIndex == index
+                ? Appcolors.Primary
+                : context.appSecondaryText,
           ),
-        ),
-      ],
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: selectedIndex == index
+                    ? Appcolors.Primary
+                    : context.appSecondaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -762,11 +701,8 @@ class _ActivityValue extends StatelessWidget {
     children: [
       Icon(icon, color: Appcolors.Primary),
       const SizedBox(height: 5),
-      Text(
-        value,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-      ),
-      Text(label, style: const TextStyle(color: Appcolors.Grey2)),
+      Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      Text(label, style: TextStyle(color: context.appSecondaryText)),
     ],
   );
 }
@@ -800,8 +736,12 @@ class _MedicationHomeStatus extends StatelessWidget {
             child: Text(
               complete
                   ? '${AppStrings.of(context).text('allDosesCompleted')} • ${AppStrings.of(context).dayStreak(summary.streakDays)}'
-                  : AppStrings.of(context).medicationHomeProgress(taken: summary.takenCount, total: summary.scheduledCount, streak: summary.streakDays),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  : AppStrings.of(context).medicationHomeProgress(
+                      taken: summary.takenCount,
+                      total: summary.scheduledCount,
+                      streak: summary.streakDays,
+                    ),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
         ],

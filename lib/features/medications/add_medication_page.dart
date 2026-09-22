@@ -1,3 +1,4 @@
+import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:meditrack/features/medications/models/medication.dart';
 import 'package:meditrack/themes/appcolors.dart';
@@ -63,7 +64,9 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
     Navigator.pop(
       context,
       Medication(
-        id: widget.medication?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        id:
+            widget.medication?.id ??
+            DateTime.now().microsecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         type: _type,
         dosage: _dosageController.text.trim(),
@@ -80,10 +83,10 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xffF9F7FB),
+      backgroundColor: context.appCanvas,
       appBar: AppBar(
-        backgroundColor: Appcolors.White,
-        foregroundColor: Appcolors.Black,
+        backgroundColor: context.appSurface,
+        foregroundColor: context.appText,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -108,7 +111,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                 const SizedBox(height: 6),
                 Text(
                   strings.text('addMedicationDescription'),
-                  style: TextStyle(color: Appcolors.Grey2),
+                  style: TextStyle(color: context.appSecondaryText),
                 ),
                 const SizedBox(height: 24),
                 _TextInput(
@@ -136,7 +139,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                             type.icon,
                             size: 18,
                             color: _type == type
-                                ? Appcolors.White
+                                ? context.appOnPrimary
                                 : Appcolors.Primary,
                           ),
                           label: Text(strings.medicationType(type.name)),
@@ -144,14 +147,14 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                           selectedColor: Appcolors.Primary,
                           labelStyle: TextStyle(
                             color: _type == type
-                                ? Appcolors.White
-                                : Appcolors.Black2,
+                                ? context.appOnPrimary
+                                : context.appText,
                             fontWeight: FontWeight.w600,
                           ),
                           side: BorderSide(
                             color: _type == type
                                 ? Appcolors.Primary
-                                : Appcolors.Grey3,
+                                : context.appOutline,
                           ),
                           onSelected: (_) => setState(() => _type = type),
                         ),
@@ -181,7 +184,9 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                       .map(
                         (frequency) => DropdownMenuItem(
                           value: frequency,
-                          child: Text(strings.medicationFrequency(frequency.name)),
+                          child: Text(
+                            strings.medicationFrequency(frequency.name),
+                          ),
                         ),
                       )
                       .toList(),
@@ -191,7 +196,10 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                   const SizedBox(height: 8),
                   Text(
                     strings.text('asNeededDescription'),
-                    style: const TextStyle(color: Appcolors.Grey2, fontSize: 12),
+                    style: TextStyle(
+                      color: context.appSecondaryText,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 18),
@@ -212,7 +220,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                 const SizedBox(height: 24),
                 Text(
                   strings.text('takeMedication'),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -226,14 +234,14 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                           selectedColor: Appcolors.Primary,
                           labelStyle: TextStyle(
                             color: _mealRelation == relation
-                                ? Appcolors.White
-                                : Appcolors.Black2,
+                                ? context.appOnPrimary
+                                : context.appText,
                             fontWeight: FontWeight.w600,
                           ),
                           side: BorderSide(
                             color: _mealRelation == relation
                                 ? Appcolors.Primary
-                                : Appcolors.Grey3,
+                                : context.appOutline,
                           ),
                           onSelected: (_) =>
                               setState(() => _mealRelation = relation),
@@ -249,7 +257,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                     onPressed: _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Appcolors.Primary,
-                      foregroundColor: Appcolors.White,
+                      foregroundColor: context.appOnPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -274,18 +282,18 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
   InputDecoration _inputDecoration(IconData icon) => InputDecoration(
     prefixIcon: Icon(icon, color: Appcolors.Primary),
     filled: true,
-    fillColor: Appcolors.White,
+    fillColor: context.appSurface,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Appcolors.Grey3),
+      borderSide: BorderSide(color: context.appOutline),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Appcolors.Grey3),
+      borderSide: BorderSide(color: context.appOutline),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Appcolors.Primary, width: 1.5),
+      borderSide: BorderSide(color: Appcolors.Primary, width: 1.5),
     ),
   );
 }
@@ -309,7 +317,7 @@ class _TextInput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
@@ -318,21 +326,18 @@ class _TextInput extends StatelessWidget {
             hintText: hint,
             prefixIcon: Icon(icon, color: Appcolors.Primary),
             filled: true,
-            fillColor: Appcolors.White,
+            fillColor: context.appSurface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Appcolors.Grey3),
+              borderSide: BorderSide(color: context.appOutline),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Appcolors.Grey3),
+              borderSide: BorderSide(color: context.appOutline),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Appcolors.Primary,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: Appcolors.Primary, width: 1.5),
             ),
           ),
         ),
@@ -361,23 +366,20 @@ class _SelectionTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Appcolors.White,
+          color: context.appSurface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Appcolors.Grey3),
+          border: Border.all(color: context.appOutline),
         ),
         child: Row(
           children: [
             Icon(icon, color: Appcolors.Primary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
+              child: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
             ),
-            Text(value, style: const TextStyle(color: Appcolors.Grey1)),
+            Text(value, style: TextStyle(color: context.appSecondaryText)),
             const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: Appcolors.Grey2),
+            Icon(Icons.chevron_right_rounded, color: context.appSecondaryText),
           ],
         ),
       ),
