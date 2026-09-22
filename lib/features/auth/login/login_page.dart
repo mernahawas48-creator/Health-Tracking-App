@@ -4,12 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 import 'package:meditrack/core/services/auth_service.dart';
+import 'package:meditrack/core/di/injection.dart';
 import 'package:meditrack/core/utils/validators.dart';
 import 'package:meditrack/core/widgets/custom_text_form_field.dart';
 
 import 'package:meditrack/features/auth/widgets/authview.dart';
 import 'package:meditrack/features/auth/session_cubit.dart';
-import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
 class LoginPage extends StatefulWidget {
@@ -21,7 +21,10 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   Future<void> _continueAfterVerification() async {
-    if (!AppSettingsScope.of(context).settings.profileSetupComplete) {
+    final configured = await context.read<SessionCubit>().prepareAccount();
+    if (!mounted) return;
+    if (configured == null) throw StateError('No Firebase account.');
+    if (!configured) {
       Navigator.pushReplacementNamed(context, '/profileview');
       return;
     }
@@ -34,7 +37,9 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  final AuthService _authService = AuthService();
+  final AuthService _authService = getIt.isRegistered<AuthService>()
+      ? getIt<AuthService>()
+      : AuthService();
 
   final TextEditingController emailController = TextEditingController();
 
@@ -43,6 +48,23 @@ class _LoginPageState extends State<LoginPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
+
+  Future<void> _signInWithGoogle() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      await _authService.signInWithGoogle();
+      if (mounted) await _continueAfterVerification();
+    } catch (_) {
+      if (mounted)
+        _showErrorDialog(
+          title: 'Google sign in failed',
+          message: 'Please try again.',
+        );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -440,23 +462,23 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               SizedBox(height: size.height * 0.02),
 
-              const Text(
+              Text(
                 'Hey, Welcome back!',
 
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Appcolors.Black,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
 
-              const Text(
+              Text(
                 'Glad to see you, Again!',
 
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Appcolors.Black,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
 
@@ -572,9 +594,9 @@ class _LoginPageState extends State<LoginPage> {
               // OR
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Divider(
-                      color: Appcolors.Grey1,
+                      color: Theme.of(context).dividerColor,
 
                       thickness: 1.5,
 
@@ -587,16 +609,19 @@ class _LoginPageState extends State<LoginPage> {
                       horizontal: size.width * 0.05,
                     ),
 
-                    child: const Text(
+                    child: Text(
                       'or continue with',
 
-                      style: TextStyle(fontSize: 14, color: Appcolors.Black2),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
 
-                  const Expanded(
+                  Expanded(
                     child: Divider(
-                      color: Appcolors.Grey1,
+                      color: Theme.of(context).dividerColor,
 
                       thickness: 1.5,
 
@@ -610,12 +635,7 @@ class _LoginPageState extends State<LoginPage> {
 
               // GOOGLE
               InkWell(
-                onTap: _isLoading
-                    ? null
-                    : () {
-                        // Google Sign-In
-                        // سنضيفه بعد ما نخلص Email Auth.
-                      },
+                onTap: _isLoading ? null : _signInWithGoogle,
 
                 borderRadius: BorderRadius.circular(30),
 
@@ -632,7 +652,9 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Text(
                     "Don't have an account?",
-                    style: const TextStyle(color: Appcolors.Black),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   TextButton(
                     onPressed: _isLoading

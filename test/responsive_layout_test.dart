@@ -18,6 +18,8 @@ import 'package:meditrack/features/water_tracker_page.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/firebase_fakes.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   for (final width in [320.0, 390.0, 800.0]) {
@@ -49,8 +51,9 @@ void main() {
           'onboarding_complete': true,
           'local_signed_in': true,
         });
+        registerFirebaseFakes();
         setupDependencies();
-        final settings = await AppSettingsController.load();
+        final settings = await AppSettingsController.load(profiles: getIt());
         await tester.pumpWidget(HealthApp(settingsController: settings));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: 'Home at $width px');
@@ -103,8 +106,9 @@ void main() {
       'onboarding_complete': true,
       'local_signed_in': true,
     });
+    registerFirebaseFakes();
     setupDependencies();
-    final settings = await AppSettingsController.load();
+    final settings = await AppSettingsController.load(profiles: getIt());
     await tester.pumpWidget(HealthApp(settingsController: settings));
     await tester.pumpAndSettle();
     tester

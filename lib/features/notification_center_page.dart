@@ -1,6 +1,7 @@
 import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meditrack/core/di/injection.dart';
+import 'package:meditrack/services/notification_state_repository.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 import 'package:meditrack/themes/appcolors.dart';
 
@@ -12,21 +13,26 @@ class NotificationCenterPage extends StatefulWidget {
 
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
   bool _read = false;
+  NotificationStateRepository get _repository =>
+      getIt<NotificationStateRepository>();
   Future<void> _markAll() async {
     setState(() => _read = true);
-    await (await SharedPreferences.getInstance()).setBool(
-      'notifications_read',
-      true,
-    );
+    try {
+      await _repository.markRead();
+    } catch (_) {
+      if (mounted) setState(() => _read = false);
+    }
   }
 
   @override
-  void initState() {
-    super.initState();
-    SharedPreferences.getInstance().then((p) {
-      if (mounted)
-        setState(() => _read = p.getBool('notifications_read') ?? false);
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _repository
+        .isRead()
+        .then((value) {
+          if (mounted) setState(() => _read = value);
+        })
+        .catchError((Object _) {});
   }
 
   @override

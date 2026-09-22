@@ -10,10 +10,36 @@ import 'package:meditrack/services/nutrition_repository.dart';
 import 'package:meditrack/services/usda_food_service.dart';
 import 'package:meditrack/services/water_repository.dart';
 import 'package:meditrack/services/sleep_repository.dart';
+import 'package:meditrack/services/account_firestore.dart';
+import 'package:meditrack/services/user_profile_repository.dart';
+import 'package:meditrack/core/services/auth_service.dart';
+import 'package:meditrack/services/health_assistant_service.dart';
+import 'package:meditrack/services/notification_state_repository.dart';
 
 final getIt = GetIt.instance;
 
 void setupDependencies() {
+  if (!getIt.isRegistered<AuthService>()) {
+    getIt.registerLazySingleton<AuthService>(() => AuthService());
+  }
+  if (!getIt.isRegistered<AccountFirestore>()) {
+    getIt.registerLazySingleton<AccountFirestore>(() => AccountFirestore());
+  }
+  if (!getIt.isRegistered<UserProfileRepository>()) {
+    getIt.registerLazySingleton<UserProfileRepository>(
+      () => UserProfileRepository(getIt()),
+    );
+  }
+  if (!getIt.isRegistered<NotificationStateRepository>()) {
+    getIt.registerLazySingleton<NotificationStateRepository>(
+      () => NotificationStateRepository(getIt()),
+    );
+  }
+  if (!getIt.isRegistered<HealthAssistantService>()) {
+    getIt.registerLazySingleton<HealthAssistantService>(
+      () => FirebaseHealthAssistantService(),
+    );
+  }
   if (!getIt.isRegistered<LocalSessionService>()) {
     getIt.registerLazySingleton<LocalSessionService>(
       () => LocalSessionService(),
@@ -21,7 +47,7 @@ void setupDependencies() {
   }
   if (!getIt.isRegistered<MedicationRepository>()) {
     getIt.registerLazySingleton<MedicationRepository>(
-      () => MedicationRepository(),
+      () => FirestoreMedicationRepository(getIt()),
     );
   }
   if (!getIt.isRegistered<MedicationNotificationService>()) {
@@ -31,17 +57,21 @@ void setupDependencies() {
   }
   if (!getIt.isRegistered<NutritionRepository>()) {
     getIt.registerLazySingleton<NutritionRepository>(
-      () => NutritionRepository(),
+      () => FirestoreNutritionRepository(getIt()),
     );
   }
   if (!getIt.isRegistered<UsdaFoodService>()) {
     getIt.registerLazySingleton<UsdaFoodService>(() => UsdaFoodService());
   }
   if (!getIt.isRegistered<WaterRepository>()) {
-    getIt.registerLazySingleton<WaterRepository>(() => WaterRepository());
+    getIt.registerLazySingleton<WaterRepository>(
+      () => FirestoreWaterRepository(getIt()),
+    );
   }
   if (!getIt.isRegistered<SleepRepository>()) {
-    getIt.registerLazySingleton<SleepRepository>(() => SleepRepository());
+    getIt.registerLazySingleton<SleepRepository>(
+      () => FirestoreSleepRepository(getIt()),
+    );
   }
   if (!getIt.isRegistered<MedicationCubit>()) {
     getIt.registerFactory<MedicationCubit>(

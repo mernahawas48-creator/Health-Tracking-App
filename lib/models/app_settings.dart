@@ -118,6 +118,41 @@ class AppSettings {
     'sleepReminderHour': sleepReminderHour,
   };
 
+  Map<String, dynamic> toDeviceJson() => {
+    'unit': unit.name,
+    'theme': theme.name,
+    'languageCode': languageCode,
+    'waterReminderEnabled': waterReminderEnabled,
+    'sleepReminderEnabled': sleepReminderEnabled,
+    'waterReminderHour': waterReminderHour,
+    'sleepReminderHour': sleepReminderHour,
+  };
+
+  Map<String, dynamic> toAccountJson() => {
+    'waterGoalMl': waterGoalMl,
+    'sleepGoalMinutes': sleepGoalMinutes,
+    'activeCaloriesGoal': activeCaloriesGoal,
+    'dailyCalorieGoal': dailyCalorieGoal,
+    'healthGoals': healthGoals,
+    'dateOfBirth': dateOfBirth?.toIso8601String(),
+    'age': age,
+    'gender': gender,
+    'heightCm': heightCm,
+    'weightKg': weightKg,
+    'displayName': displayName,
+    'profileSetupComplete': profileSetupComplete,
+  };
+
+  static AppSettings withAccount(
+    AppSettings device,
+    Map<String, dynamic>? account, {
+    String? imagePath,
+  }) => AppSettings.fromJson({
+    ...device.toDeviceJson(),
+    ...?account,
+    'profileImagePath': imagePath,
+  });
+
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
     waterGoalMl: (json['waterGoalMl'] as num?)?.toInt() ?? 2000,
     sleepGoalMinutes: (json['sleepGoalMinutes'] as num?)?.toInt() ?? 480,

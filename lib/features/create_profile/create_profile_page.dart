@@ -106,17 +106,22 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
     }
     setState(() => _finishing = true);
     try {
+      final controller = AppSettingsScope.of(context);
+      if (controller.uid == null) {
+        final configured = await context.read<SessionCubit>().prepareAccount();
+        if (configured == null) throw StateError('No Firebase account.');
+      }
+      final uid = controller.uid!;
       String? imagePath;
       if (profileImage != null) {
         final directory = await getApplicationSupportDirectory();
         final extension = profileImage!.path.split('.').last.toLowerCase();
         final savedImage = await profileImage!.copy(
-          '${directory.path}/profile_photo.${extension == 'png' ? 'png' : 'jpg'}',
+          '${directory.path}/profile_photo_$uid.${extension == 'png' ? 'png' : 'jpg'}',
         );
         imagePath = savedImage.path;
       }
       if (!mounted) return;
-      final controller = AppSettingsScope.of(context);
       final today = DateTime.now();
       final birthday = dateOfBirth;
       final age = birthday == null
@@ -144,7 +149,7 @@ class _CreateProfilePageState extends State<CreateProfilePage> {
       if (!mounted) return;
       final signedIn = await context.read<SessionCubit>().signIn();
       if (!mounted) return;
-      if (!signedIn) throw StateError('Could not start the local session.');
+      if (!signedIn) throw StateError('Could not start the Firebase session.');
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     } catch (_) {
       if (mounted) {

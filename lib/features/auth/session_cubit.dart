@@ -1,30 +1,76 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:meditrack/services/local_session_service.dart';
 
-enum SessionStatus { loading, onboarding, signedOut, signedIn, failure }
+import 'dart:async';
+
+import 'package:meditrack/services/local_session_service.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
+import 'package:meditrack/services/medication_notification_service.dart';
+
+enum SessionStatus {
+  loading,
+  onboarding,
+  signedOut,
+  profileSetup,
+  signedIn,
+  failure,
+}
 
 class SessionCubit extends Cubit<SessionStatus> {
-  SessionCubit(this._session, {Future<void> Function()? signOutExistingAuth})
-    : _signOutExistingAuth = signOutExistingAuth,
-      super(SessionStatus.loading);
+  SessionCubit(
+    this._session, {
+    required String? Function() currentUid,
+    required AppSettingsController settings,
+    bool Function()? canUseAccount,
+    Future<void> Function()? signOutExistingAuth,
+  }) : _signOutExistingAuth = signOutExistingAuth,
+       _currentUid = currentUid,
+       _canUseAccount = canUseAccount,
+       _settings = settings,
+       super(SessionStatus.loading);
 
   final LocalSessionService _session;
   final Future<void> Function()? _signOutExistingAuth;
+  final String? Function() _currentUid;
+  final bool Function()? _canUseAccount;
+  final AppSettingsController _settings;
+  String? _activeUid;
+  String? get activeUid => _activeUid;
+  StreamSubscription<String?>? _subscription;
+
+  void watch(Stream<String?> changes) {
+    _subscription ??= changes.listen((uid) {
+      if (uid == null && _activeUid != null) {
+        _activeUid = null;
+        _settings.clearAccount();
+        MedicationNotificationService.instance.cancelMedicationReminders();
+        emit(SessionStatus.signedOut);
+      } else if (uid != null && _activeUid != null && uid != _activeUid) {
+        _activeUid = null;
+        _settings.clearAccount();
+        restore();
+      }
+    });
+  }
 
   Future<void> restore() async {
     emit(SessionStatus.loading);
     try {
-      final values = await Future.wait([
-        _session.hasCompletedOnboarding(),
-        _session.hasSession(),
-      ]);
-      emit(
-        values[1]
-            ? SessionStatus.signedIn
-            : values[0]
-            ? SessionStatus.signedOut
-            : SessionStatus.onboarding,
-      );
+      final onboarded = await _session.hasCompletedOnboarding();
+      if (!onboarded) {
+        emit(SessionStatus.onboarding);
+        return;
+      }
+      final uid = _currentUid();
+      if (uid == null || !(_canUseAccount?.call() ?? true)) {
+        _activeUid = null;
+        _settings.clearAccount();
+        emit(SessionStatus.signedOut);
+        return;
+      }
+      final configured = await prepareAccount();
+      if (configured == null) return;
+      _activeUid = uid;
+      emit(configured ? SessionStatus.signedIn : SessionStatus.profileSetup);
     } catch (_) {
       emit(SessionStatus.failure);
     }
@@ -43,7 +89,10 @@ class SessionCubit extends Cubit<SessionStatus> {
 
   Future<bool> signIn() async {
     try {
-      await _session.startSession();
+      final uid = _currentUid();
+      if (uid == null || !(_canUseAccount?.call() ?? true)) return false;
+      if (_settings.uid != uid) await _settings.loadAccount(uid);
+      _activeUid = uid;
       emit(SessionStatus.signedIn);
       return true;
     } catch (_) {
@@ -52,15 +101,32 @@ class SessionCubit extends Cubit<SessionStatus> {
     }
   }
 
+  /// Returns null when Firebase has no account, otherwise its profile state.
+  Future<bool?> prepareAccount() async {
+    final uid = _currentUid();
+    if (uid == null || !(_canUseAccount?.call() ?? true)) return null;
+    await _settings.loadAccount(uid);
+    return _settings.settings.profileSetupComplete;
+  }
+
   Future<bool> signOut() async {
     try {
       await _signOutExistingAuth?.call();
       await _session.endSession();
+      await MedicationNotificationService.instance.cancelMedicationReminders();
+      _activeUid = null;
+      _settings.clearAccount();
       emit(SessionStatus.signedOut);
       return true;
     } catch (_) {
       emit(SessionStatus.failure);
       return false;
     }
+  }
+
+  @override
+  Future<void> close() async {
+    await _subscription?.cancel();
+    await super.close();
   }
 }

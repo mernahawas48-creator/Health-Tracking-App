@@ -12,6 +12,7 @@ class StartupPage extends StatelessWidget {
         builder: (context, status) {
           final route = switch (status) {
             SessionStatus.signedIn => '/home',
+            SessionStatus.profileSetup => '/profileview',
             SessionStatus.signedOut => '/login',
             SessionStatus.onboarding => '/onboarding',
             _ => null,

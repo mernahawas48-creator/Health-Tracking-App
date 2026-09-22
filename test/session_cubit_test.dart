@@ -1,58 +1,106 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meditrack/features/auth/session_cubit.dart';
+import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/services/local_session_service.dart';
+import 'package:meditrack/services/user_profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class MemoryProfiles extends UserProfileRepository {
+  final records = <String, Map<String, dynamic>>{};
+  @override
+  Future<Map<String, dynamic>?> load(String uid) async => records[uid];
+  @override
+  Future<void> save(String uid, Map<String, dynamic> fields) async {
+    records[uid] = {...?records[uid], ...fields};
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUp(() => SharedPreferences.setMockInitialValues({}));
-
-  test(
-    'restores onboarding, sign in, and sign out from local storage',
-    () async {
-      final cubit = SessionCubit(LocalSessionService());
-      await cubit.restore();
-      expect(cubit.state, SessionStatus.onboarding);
-
-      expect(await cubit.completeOnboarding(), isTrue);
-      expect(cubit.state, SessionStatus.signedOut);
-      expect(await LocalSessionService.onboardingComplete(), isTrue);
-
-      expect(await cubit.signIn(), isTrue);
-      expect(cubit.state, SessionStatus.signedIn);
-      expect(await LocalSessionService.signedIn(), isTrue);
-
-      await cubit.restore();
-      expect(cubit.state, SessionStatus.signedIn);
-
-      expect(await cubit.signOut(), isTrue);
-      expect(cubit.state, SessionStatus.signedOut);
-      expect(await LocalSessionService.signedIn(), isFalse);
-      final restarted = SessionCubit(LocalSessionService());
-      await restarted.restore();
-      expect(restarted.state, SessionStatus.signedOut);
-      await restarted.close();
-      await cubit.close();
-    },
+  setUp(
+    () => SharedPreferences.setMockInitialValues({'onboarding_complete': true}),
   );
 
   test(
-    'logout clears existing auth before clearing the local session',
+    'Firebase identity controls restore, account switch and logout',
     () async {
-      var existingAuthCleared = false;
-      final cubit = SessionCubit(
+      final profiles = MemoryProfiles();
+      final settings = await AppSettingsController.load(profiles: profiles);
+      String? uid;
+      final session = SessionCubit(
         LocalSessionService(),
-        signOutExistingAuth: () async {
-          existingAuthCleared = true;
-        },
+        currentUid: () => uid,
+        settings: settings,
+        signOutExistingAuth: () async => uid = null,
       );
-      await cubit.signIn();
-      expect(await cubit.signOut(), isTrue);
-      expect(existingAuthCleared, isTrue);
-      expect(cubit.state, SessionStatus.signedOut);
-      expect(await LocalSessionService.signedIn(), isFalse);
-      await cubit.close();
+      addTearDown(session.close);
+
+      await session.restore();
+      expect(session.state, SessionStatus.signedOut);
+      uid = 'A';
+      await session.restore();
+      expect(session.state, SessionStatus.profileSetup);
+      expect(settings.settings.displayName, 'User Name');
+      await settings.update(
+        settings.settings.copyWith(
+          displayName: 'Alice',
+          profileSetupComplete: true,
+          healthGoals: ['Build Muscle'],
+          waterGoalMl: 2500,
+        ),
+      );
+      expect(await session.signIn(), isTrue);
+      expect(session.activeUid, 'A');
+      expect(session.state, SessionStatus.signedIn);
+
+      expect(await session.signOut(), isTrue);
+      expect(session.state, SessionStatus.signedOut);
+      expect(settings.settings.displayName, 'User Name');
+      expect(settings.settings.healthGoals, isEmpty);
+      expect(settings.settings.waterGoalMl, 2000);
+      expect(profiles.records['A']?['displayName'], 'Alice');
+
+      uid = 'B';
+      await session.restore();
+      expect(session.state, SessionStatus.profileSetup);
+      expect(settings.settings.displayName, 'User Name');
+      await settings.update(
+        settings.settings.copyWith(
+          displayName: 'Bob',
+          profileSetupComplete: true,
+        ),
+      );
+      await session.signIn();
+      expect(settings.settings.displayName, 'Bob');
+      await session.signOut();
+
+      uid = 'A';
+      await session.restore();
+      expect(session.state, SessionStatus.signedIn);
+      expect(settings.settings.displayName, 'Alice');
+      expect(settings.settings.healthGoals, ['Build Muscle']);
+      expect(settings.settings.waterGoalMl, 2500);
     },
   );
+
+  test('unowned legacy profile is never assigned to an account', () async {
+    SharedPreferences.setMockInitialValues({
+      'onboarding_complete': true,
+      'app_settings_v1': '{"displayName":"Legacy","profileSetupComplete":true}',
+      'local_signed_in': true,
+    });
+    final settings = await AppSettingsController.load(
+      profiles: MemoryProfiles(),
+    );
+    final session = SessionCubit(
+      LocalSessionService(),
+      currentUid: () => 'new',
+      settings: settings,
+    );
+    addTearDown(session.close);
+    await session.restore();
+    expect(session.state, SessionStatus.profileSetup);
+    expect(settings.settings.displayName, 'User Name');
+    expect(settings.settings.profileSetupComplete, isFalse);
+  });
 }

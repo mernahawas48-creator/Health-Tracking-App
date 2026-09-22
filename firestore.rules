@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read, delete: if owner(userId);
+      allow create, update: if owner(userId)
+        && request.resource.data.keys().hasOnly([
+          'waterGoalMl', 'sleepGoalMinutes', 'activeCaloriesGoal',
+          'dailyCalorieGoal', 'healthGoals', 'dateOfBirth', 'age',
+          'gender', 'heightCm', 'weightKg', 'displayName',
+          'profileSetupComplete'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.healthGoals is list
+        && request.resource.data.profileSetupComplete is bool;
+
+      match /medications/{medicationId} {
+        allow read, delete: if owner(userId);
+        allow create, update: if owner(userId)
+          && request.resource.data.id == medicationId
+          && request.resource.data.name is string;
+      }
+      match /nutritionLogs/{logId} {
+        allow read, delete: if owner(userId);
+        allow create, update: if owner(userId)
+          && request.resource.data.id == logId
+          && request.resource.data.date is string;
+      }
+      match /waterLogs/{date} {
+        allow read: if owner(userId);
+        allow write: if owner(userId)
+          && request.resource.data.keys().hasOnly(['waterMl', 'completed'])
+          && (!('waterMl' in request.resource.data) || request.resource.data.waterMl is int)
+          && (!('completed' in request.resource.data) || request.resource.data.completed is bool);
+      }
+      match /sleepLogs/{date} {
+        allow read: if owner(userId);
+        allow write: if owner(userId)
+          && request.resource.data.keys().hasOnly(['sleepMinutes', 'completed'])
+          && (!('sleepMinutes' in request.resource.data) || request.resource.data.sleepMinutes is int)
+          && (!('completed' in request.resource.data) || request.resource.data.completed is bool);
+      }
+      match /notificationState/{stateId} {
+        allow read: if owner(userId);
+        allow write: if owner(userId)
+          && stateId == 'inbox'
+          && request.resource.data.keys().hasOnly(['read'])
+          && request.resource.data.read is bool;
+      }
+    }
+  }
+}

@@ -4,6 +4,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
 import 'package:meditrack/core/services/auth_service.dart';
+import 'package:meditrack/core/di/injection.dart';
+import 'package:meditrack/features/auth/session_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meditrack/core/utils/validators.dart';
 import 'package:meditrack/core/widgets/custom_text_form_field.dart';
 
@@ -18,7 +21,9 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  final AuthService _authService = AuthService();
+  final AuthService _authService = getIt.isRegistered<AuthService>()
+      ? getIt<AuthService>()
+      : AuthService();
 
   final TextEditingController emailController = TextEditingController();
 
@@ -37,7 +42,15 @@ class _SignupPageState extends State<SignupPage> {
     try {
       await _authService.signInWithGoogle();
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/profileview');
+      final configured = await context.read<SessionCubit>().prepareAccount();
+      if (!mounted) return;
+      if (configured == true) {
+        await context.read<SessionCubit>().signIn();
+        if (mounted)
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      } else {
+        Navigator.pushReplacementNamed(context, '/profileview');
+      }
     } on GoogleSignInException catch (error) {
       if (error.code != GoogleSignInExceptionCode.canceled && mounted) {
         _showErrorDialog(
@@ -380,22 +393,22 @@ class _SignupPageState extends State<SignupPage> {
             children: [
               SizedBox(height: size.height * 0.02),
 
-              const Text(
+              Text(
                 'Create Your Account',
 
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  color: Appcolors.Black,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
 
-              const Text(
+              Text(
                 'Start your healthy journey!',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Appcolors.Black,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
 
@@ -510,9 +523,9 @@ class _SignupPageState extends State<SignupPage> {
               SizedBox(height: size.height * 0.05),
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Divider(
-                      color: Appcolors.Grey1,
+                      color: Theme.of(context).dividerColor,
                       thickness: 1.5,
                       indent: 20,
                     ),
@@ -521,14 +534,17 @@ class _SignupPageState extends State<SignupPage> {
                     padding: EdgeInsets.symmetric(
                       horizontal: size.width * 0.05,
                     ),
-                    child: const Text(
+                    child: Text(
                       'or continue with',
-                      style: TextStyle(fontSize: 14, color: Appcolors.Black2),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Divider(
-                      color: Appcolors.Grey1,
+                      color: Theme.of(context).dividerColor,
                       thickness: 1.5,
                       endIndent: 20,
                     ),
@@ -550,9 +566,11 @@ class _SignupPageState extends State<SignupPage> {
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Already have an account?',
-                    style: TextStyle(color: Appcolors.Black),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   TextButton(
                     onPressed: _isLoading

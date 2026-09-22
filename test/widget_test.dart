@@ -1,26 +1,26 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:meditrack/app/app.dart';
-import 'package:meditrack/core/di/injection.dart';
-import 'package:meditrack/services/app_settings_controller.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meditrack/features/auth/login/login_page.dart';
+import 'package:meditrack/features/auth/signup/signup_page.dart';
+import 'package:meditrack/themes/app_theme.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUp(() {
-    SharedPreferences.setMockInitialValues({
-      'onboarding_complete': true,
-      'local_signed_in': true,
+  for (final dark in [false, true]) {
+    testWidgets('Login and Signup render in ${dark ? 'dark' : 'light'} theme', (
+      tester,
+    ) async {
+      for (final page in [const LoginPage(), const SignupPage()]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+            home: page,
+          ),
+        );
+        expect(find.byType(TextFormField), findsWidgets);
+        expect(tester.takeException(), isNull);
+      }
     });
-    setupDependencies();
-  });
-
-  testWidgets('Health app starts', (tester) async {
-    final settingsController = await AppSettingsController.load();
-
-    await tester.pumpWidget(HealthApp(settingsController: settingsController));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Welcome 👋'), findsOneWidget);
-  });
+  }
 }

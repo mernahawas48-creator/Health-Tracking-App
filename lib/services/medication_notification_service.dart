@@ -66,6 +66,17 @@ class MedicationNotificationService {
     }
   }
 
+  Future<void> cancelMedicationReminders() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final reminder in pending) {
+        if (reminder.id != waterReminderId && reminder.id != sleepReminderId) {
+          await _plugin.cancel(reminder.id);
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> setDailyWellnessReminder({
     required int id,
     required String title,

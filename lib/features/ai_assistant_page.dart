@@ -1,6 +1,7 @@
 import 'package:meditrack/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:meditrack/services/health_assistant_service.dart';
+import 'package:meditrack/core/di/injection.dart';
 import 'package:meditrack/themes/appcolors.dart';
 import 'package:meditrack/l10n/app_strings.dart';
 
@@ -12,7 +13,7 @@ class AiAssistantPage extends StatefulWidget {
 
 class _AiAssistantPageState extends State<AiAssistantPage> {
   final _input = TextEditingController();
-  final _assistant = LocalHealthAssistantService();
+  final HealthAssistantService _assistant = getIt<HealthAssistantService>();
   final _messages = <_Message>[
     const _Message(
       'Hi! I can help with healthy habits and app tracking.',
@@ -43,10 +44,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       _waiting = true;
     });
     _input.clear();
-    final arabic = AppStrings.of(context).isArabic;
-    final answer = arabic
-        ? _arabicReply(question)
-        : await _assistant.reply(question);
+    final answer = await _assistant.reply(question);
     if (!mounted) return;
     setState(() {
       _messages.add(_Message(answer, false));
@@ -135,16 +133,6 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
       ],
     ),
   );
-}
-
-String _arabicReply(String question) {
-  if (question.contains('ماء'))
-    return 'اشرب رشفات صغيرة ومنتظمة، وسجّل كوبك التالي في متابعة الماء.';
-  if (question.contains('نوم'))
-    return 'حاول تثبيت وقت النوم وابدأ روتينًا هادئًا قبل النوم.';
-  if (question.contains('دواء'))
-    return 'استخدم جدول الدواء واتبع تعليمات الطبيب أو الصيدلي. لا أستطيع تقديم تشخيص طبي.';
-  return 'يمكنني مساعدتك في فهم بيانات التطبيق وبناء عادات صحية وتحضير أسئلة للطبيب.';
 }
 
 class _Message {

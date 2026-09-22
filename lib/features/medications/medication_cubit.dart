@@ -26,7 +26,13 @@ class MedicationCubit extends Cubit<MedicationState> {
   Future<void> load() async {
     emit(MedicationState(medications: state.medications, loading: true));
     try {
-      emit(MedicationState(medications: await _repository.load()));
+      final medications = await _repository.load();
+      emit(MedicationState(medications: medications));
+      for (final medication in medications) {
+        try {
+          await _notifications.sync(medication);
+        } catch (_) {}
+      }
     } catch (_) {
       emit(
         MedicationState(medications: state.medications, error: 'medications'),
