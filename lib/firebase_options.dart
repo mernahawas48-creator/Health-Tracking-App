@@ -17,29 +17,17 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -52,11 +40,49 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyC02wuGnxEw3RYCrqPqgUQO0giRr2SjS3Y',
+    appId: '1:227105226409:web:bac0622681d5989d75b3b8',
+    messagingSenderId: '227105226409',
+    projectId: 'meditrack-49903',
+    authDomain: 'meditrack-49903.firebaseapp.com',
+    storageBucket: 'meditrack-49903.firebasestorage.app',
+    measurementId: 'G-109CK9K7WG',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAhD10kLsLHdffUjmiI_GmWp2ZtvHM96WM',
     appId: '1:227105226409:android:a3f97f2e0a80897575b3b8',
     messagingSenderId: '227105226409',
     projectId: 'meditrack-49903',
     storageBucket: 'meditrack-49903.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAFOWqpqwUzBiVmooW--B2fI57eLpNbnNM',
+    appId: '1:227105226409:ios:a5af2a9d87c82dde75b3b8',
+    messagingSenderId: '227105226409',
+    projectId: 'meditrack-49903',
+    storageBucket: 'meditrack-49903.firebasestorage.app',
+    iosBundleId: 'com.example.meditrack',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyAFOWqpqwUzBiVmooW--B2fI57eLpNbnNM',
+    appId: '1:227105226409:ios:a5af2a9d87c82dde75b3b8',
+    messagingSenderId: '227105226409',
+    projectId: 'meditrack-49903',
+    storageBucket: 'meditrack-49903.firebasestorage.app',
+    iosBundleId: 'com.example.meditrack',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyC02wuGnxEw3RYCrqPqgUQO0giRr2SjS3Y',
+    appId: '1:227105226409:web:f2e614c167db9f8675b3b8',
+    messagingSenderId: '227105226409',
+    projectId: 'meditrack-49903',
+    authDomain: 'meditrack-49903.firebaseapp.com',
+    storageBucket: 'meditrack-49903.firebasestorage.app',
+    measurementId: 'G-L0LN8Q8GDR',
   );
 }

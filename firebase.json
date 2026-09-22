@@ -1,1 +1,21 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"meditrack-49903","appId":"1:227105226409:android:a3f97f2e0a80897575b3b8","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"meditrack-49903","configurations":{"android":"1:227105226409:android:a3f97f2e0a80897575b3b8"}}}}}}
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "meditrack-49903",
+                    "appId": "1:227105226409:android:a3f97f2e0a80897575b3b8",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "meditrack-49903",
+                    "configurations": {
+                        "android": "1:227105226409:android:a3f97f2e0a80897575b3b8"
+                    }
+                }
+            }
+        }
+    }
+}
