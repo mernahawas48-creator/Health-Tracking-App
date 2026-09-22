@@ -29,6 +29,29 @@ void main() {
       expect(await cubit.signOut(), isTrue);
       expect(cubit.state, SessionStatus.signedOut);
       expect(await LocalSessionService.signedIn(), isFalse);
+      final restarted = SessionCubit(LocalSessionService());
+      await restarted.restore();
+      expect(restarted.state, SessionStatus.signedOut);
+      await restarted.close();
+      await cubit.close();
+    },
+  );
+
+  test(
+    'logout clears existing auth before clearing the local session',
+    () async {
+      var existingAuthCleared = false;
+      final cubit = SessionCubit(
+        LocalSessionService(),
+        signOutExistingAuth: () async {
+          existingAuthCleared = true;
+        },
+      );
+      await cubit.signIn();
+      expect(await cubit.signOut(), isTrue);
+      expect(existingAuthCleared, isTrue);
+      expect(cubit.state, SessionStatus.signedOut);
+      expect(await LocalSessionService.signedIn(), isFalse);
       await cubit.close();
     },
   );
