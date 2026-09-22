@@ -8,6 +8,8 @@ import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/firebase_fakes.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -18,8 +20,9 @@ void main() {
       'onboarding_complete': true,
       'local_signed_in': true,
     });
+    registerFirebaseFakes();
     setupDependencies();
-    final controller = await AppSettingsController.load();
+    final controller = await AppSettingsController.load(profiles: getIt());
     await tester.pumpWidget(HealthApp(settingsController: controller));
     await tester.pumpAndSettle();
 
