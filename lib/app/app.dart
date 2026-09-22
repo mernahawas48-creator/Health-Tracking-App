@@ -11,6 +11,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:meditrack/models/app_settings.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/app_theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'routes.dart';
 
@@ -26,6 +27,9 @@ class HealthApp extends StatelessWidget {
         BlocProvider(
           create: (_) => SessionCubit(
             getIt(),
+            currentUid: () => FirebaseAuth.instance.currentUser?.uid,
+            settings: settingsController,
+            canUseAccount: () => FirebaseAuth.instance.currentUser != null,
             signOutExistingAuth: () => AuthService().logout(),
           )..restore(),
         ),
