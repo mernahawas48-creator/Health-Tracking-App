@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meditrack/app/app.dart';
 import 'package:meditrack/core/di/injection.dart';
-import 'package:meditrack/features/home.dart';
+import 'package:meditrack/features/home/home.dart';
 import 'package:meditrack/models/app_settings.dart';
 import 'package:meditrack/services/app_settings_controller.dart';
 import 'package:meditrack/themes/app_theme.dart';

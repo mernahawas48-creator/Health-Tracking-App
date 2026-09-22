@@ -14,7 +14,10 @@ import 'package:meditrack/themes/app_theme.dart';
 import 'routes.dart';
 
 class HealthApp extends StatelessWidget {
-  const HealthApp({super.key, required this.settingsController});
+  const HealthApp({
+    super.key,
+    required this.settingsController,
+  });
 
   final AppSettingsController settingsController;
 
@@ -22,11 +25,21 @@ class HealthApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => SessionCubit(getIt())..restore()),
-        BlocProvider(create: (_) => getIt<MedicationCubit>()..load()),
-        BlocProvider(create: (_) => getIt<NutritionCubit>()..load()),
-        BlocProvider(create: (_) => getIt<WaterCubit>()..load()),
-        BlocProvider(create: (_) => getIt<SleepCubit>()..load()),
+        BlocProvider(
+          create: (_) => SessionCubit(getIt())..restore(),
+        ),
+        BlocProvider(
+          create: (_) => getIt<MedicationCubit>()..load(),
+        ),
+        BlocProvider(
+          create: (_) => getIt<NutritionCubit>()..load(),
+        ),
+        BlocProvider(
+          create: (_) => getIt<WaterCubit>()..load(),
+        ),
+        BlocProvider(
+          create: (_) => getIt<SleepCubit>()..load(),
+        ),
       ],
       child: AppSettingsScope(
         controller: settingsController,
@@ -34,11 +47,17 @@ class HealthApp extends StatelessWidget {
           animation: settingsController,
           builder: (context, _) {
             final settings = settingsController.settings;
+
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              title: settings.isArabic ? 'متابعة الصحة' : 'Health Tracker',
+              title: settings.isArabic
+                  ? 'متابعة الصحة'
+                  : 'Health Tracker',
               locale: Locale(settings.languageCode),
-              supportedLocales: const [Locale('en'), Locale('ar')],
+              supportedLocales: const [
+                Locale('en'),
+                Locale('ar'),
+              ],
               localizationsDelegates: const [
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,

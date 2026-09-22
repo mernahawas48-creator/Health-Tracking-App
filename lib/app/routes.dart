@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/features/startup_page.dart';
+import 'package:meditrack/features/auth/login/login_page.dart';
+import 'package:meditrack/features/auth/signup/signup_page.dart';
+import 'package:meditrack/features/create_profile/create_profile_page.dart';
+import 'package:meditrack/features/first_page.dart';
+import 'package:meditrack/features/home/home.dart';
 import 'package:meditrack/features/onboarding.dart';
-import 'package:meditrack/features/login.dart';
-import 'package:meditrack/features/signup.dart';
-import 'package:meditrack/features/home.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/': (context) => const StartupPage(),
@@ -11,4 +13,5 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/login': (context) => const LoginPage(),
   '/signup': (context) => const SignupPage(),
   '/home': (context) => const HomePage(),
+  '/profileview': (context) => const CreateProfilePage(),
 };
